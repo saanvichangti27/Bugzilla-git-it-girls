@@ -107,6 +107,7 @@ def create_bug(
 ):
     reporter = UserSummary(id=current_user.id, name=current_user.name)
     bug_data = bug_in.model_dump()
+    bug_data["assignee_id"] = None
     raw_bug = db.create_bug(bug_data, reporter=reporter)
 
     # Trigger log_event for bug creation
@@ -157,13 +158,13 @@ def update_bug(
     if not provided_fields:
         return ResponseEnvelope.success(_format_bug_response(raw_bug))
 
-    if role == "tester" and raw_bug.get("assignee_id") == current_user.id:
-        # Tester assigned to the bug can update status and assignee
+    if role == "tester" and (raw_bug.get("assignee_id") == current_user.id or raw_bug.get("status") == StatusEnum.READY_FOR_TESTING.value):
+        # Tester assigned to the bug or bug is ready for testing can update status and assignee
         disallowed_fields = set(provided_fields.keys()) - {"status", "assignee_id"}
         if disallowed_fields:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "FORBIDDEN", "message": f"Testers can only update status and assignee_id for bugs they test."}
+                detail={"code": "FORBIDDEN", "message": f"Testers can only update status and assignee_id for bugs they test or are ready for testing."}
             )
     elif role in ["reporter", "tester"]:
         # 1. Must be reporter of this bug
@@ -190,7 +191,13 @@ def update_bug(
                     "message": f"Reporters/testers are not permitted to edit fields: {', '.join(sorted(disallowed_fields))}"
                 }
             )
-    elif role not in ["developer", "admin"]:
+    elif role == "developer":
+        if raw_bug.get("assignee_id") != current_user.id and raw_bug.get("assignee_id") is not None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"code": "FORBIDDEN", "message": "Developers can only edit bugs assigned to them or unassigned bugs."}
+            )
+    elif role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={"code": "FORBIDDEN", "message": f"Role '{role}' is not authorized to edit bugs."}

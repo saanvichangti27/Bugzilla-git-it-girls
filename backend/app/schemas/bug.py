@@ -19,6 +19,7 @@ class SeverityEnum(str, Enum):
 class StatusEnum(str, Enum):
     NEW = "new"
     IN_PROGRESS = "in_progress"
+    READY_FOR_TESTING = "ready_for_testing"
     RESOLVED = "resolved"
     CLOSED = "closed"
 

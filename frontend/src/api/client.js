@@ -31,8 +31,8 @@ export const authService = {
     return response.data;
   },
   
-  signup: async (name, email, password) => {
-    const response = await api.post('/auth/signup', { name, email, password });
+  signup: async (name, email, password, role = 'reporter') => {
+    const response = await api.post('/auth/signup', { name, email, password, role });
     if (response.data?.data?.token) {
       localStorage.setItem('token', response.data.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.data.user));

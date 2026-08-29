@@ -11,4 +11,4 @@ class UserResponse(BaseModel):
     created_at: datetime
 
 class RoleUpdateRequest(BaseModel):
-    role: Literal['reporter', 'developer', 'admin']
+    role: Literal['reporter', 'tester', 'developer', 'admin']

@@ -39,23 +39,23 @@ def signup(body: SignupRequest):
                 raise HTTPException(status_code=400, detail={"code": "SIGNUP_FAILED", "message": "Signup failed without errors."})
             
             user_id = res.user.id
-            token = res.session.access_token if res.session else _generate_test_token(user_id, body.email, "reporter")
+            token = res.session.access_token if res.session else _generate_test_token(user_id, body.email, body.role)
         except Exception as e:
             raise HTTPException(status_code=400, detail={"code": "SIGNUP_FAILED", "message": str(e)})
     else:
         # Fallback memory implementation
         import uuid
         user_id = str(uuid.uuid4())
-        token = _generate_test_token(user_id, body.email, "reporter")
+        token = _generate_test_token(user_id, body.email, body.role)
 
     # Insert into our public.users table
     try:
-        user_doc = db.create_user(user_id=user_id, name=body.name, email=body.email, role="reporter")
+        user_doc = db.create_user(user_id=user_id, name=body.name, email=body.email, role=body.role)
     except Exception:
         pass # In case trigger already handled it
         user_doc = db.get_user_by_id(user_id)
         if not user_doc:
-            user_doc = {"id": user_id, "name": body.name, "email": body.email, "role": "reporter"}
+            user_doc = {"id": user_id, "name": body.name, "email": body.email, "role": body.role}
 
     return ResponseEnvelope.success(
         AuthResponseData(

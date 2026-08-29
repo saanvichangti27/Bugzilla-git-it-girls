@@ -157,12 +157,20 @@ def update_bug(
     if not provided_fields:
         return ResponseEnvelope.success(_format_bug_response(raw_bug))
 
-    if role in ["reporter", "tester"]:
+    if role == "tester" and raw_bug.get("assignee_id") == current_user.id:
+        # Tester assigned to the bug can update status and assignee
+        disallowed_fields = set(provided_fields.keys()) - {"status", "assignee_id"}
+        if disallowed_fields:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"code": "FORBIDDEN", "message": f"Testers can only update status and assignee_id for bugs they test."}
+            )
+    elif role in ["reporter", "tester"]:
         # 1. Must be reporter of this bug
         if raw_bug.get("reporter_id") != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "FORBIDDEN", "message": "Reporters/testers can only edit bugs they reported."}
+                detail={"code": "FORBIDDEN", "message": "Reporters/testers can only edit bugs they reported, unless assigned to them."}
             )
 
         # 2. Bug must be in "new" status

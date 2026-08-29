@@ -11,7 +11,8 @@ export default function Auth() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: ''
+    password: '',
+    role: 'reporter'
   });
 
   const handleSubmit = async (e) => {
@@ -22,7 +23,7 @@ export default function Auth() {
       if (isLogin) {
         await authService.login(formData.email, formData.password);
       } else {
-        await authService.signup(formData.name, formData.email, formData.password);
+        await authService.signup(formData.name, formData.email, formData.password, formData.role);
       }
       navigate('/');
     } catch (err) {
@@ -51,17 +52,33 @@ export default function Auth() {
 
         <form onSubmit={handleSubmit}>
           {!isLogin && (
-            <div className="input-group">
-              <label>Full Name</label>
-              <input 
-                type="text" 
-                className="input-field" 
-                placeholder="Jane Doe"
-                value={formData.name}
-                onChange={e => setFormData({...formData, name: e.target.value})}
-                required
-              />
-            </div>
+            <>
+              <div className="input-group">
+                <label>Full Name</label>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  placeholder="Jane Doe"
+                  value={formData.name}
+                  onChange={e => setFormData({...formData, name: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="input-group">
+                <label>Role</label>
+                <select 
+                  className="input-field" 
+                  value={formData.role}
+                  onChange={e => setFormData({...formData, role: e.target.value})}
+                  required
+                >
+                  <option value="reporter">Reporter</option>
+                  <option value="developer">Developer</option>
+                  <option value="tester">Tester</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </>
           )}
           
           <div className="input-group">

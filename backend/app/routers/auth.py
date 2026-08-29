@@ -31,7 +31,8 @@ def signup(body: SignupRequest):
                 "password": body.password,
                 "options": {
                     "data": {
-                        "name": body.name
+                        "name": body.name,
+                        "role": body.role
                     }
                 }
             })

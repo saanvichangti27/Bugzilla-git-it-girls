@@ -5,7 +5,7 @@ class SignupRequest(BaseModel):
     name: str
     email: EmailStr
     password: str
-    role: str = "reporter"
+    role: str
 
 class LoginRequest(BaseModel):
     email: EmailStr

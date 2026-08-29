@@ -64,7 +64,7 @@ export default function Auth() {
                   required
                 />
               </div>
-              
+
               <div className="input-group">
                 <label>Role</label>
                 <select 

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { api, authService } from '../api/client';
 import { Activity, BugIcon, CheckCircle, PlusCircle, ArrowRight } from 'lucide-react';
+import AdminDashboard from './AdminDashboard';
+import TesterDashboard from './TesterDashboard';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ open_bugs: 0, assigned_to_me: 0, resolved_this_week: 0 });
@@ -121,6 +123,9 @@ export default function Dashboard() {
       </table>
     </div>
   );
+
+  if (role === 'admin') return <AdminDashboard />;
+  if (role === 'tester') return <TesterDashboard />;
 
   return (
     <div>

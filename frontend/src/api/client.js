@@ -30,8 +30,8 @@ export const authService = {
     }
     return response.data;
   },
-  
-  signup: async (name, email, password, role = 'reporter') => {
+
+  signup: async (name, email, password, role) => {
     const response = await api.post('/auth/signup', { name, email, password, role });
     if (response.data?.data?.token) {
       localStorage.setItem('token', response.data.data.token);
@@ -39,12 +39,12 @@ export const authService = {
     }
     return response.data;
   },
-  
+
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   },
-  
+
   getCurrentUser: () => {
     try {
       return JSON.parse(localStorage.getItem('user'));

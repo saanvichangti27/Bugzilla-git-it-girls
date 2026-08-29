@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bugzilla Modernization Platform - Testing Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-card: rgba(22, 29, 47, 0.7);
+      --bg-card-hover: rgba(30, 41, 67, 0.85);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(99, 102, 241, 0.3);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-primary: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-cyan: #06b6d4;
+      --accent-rose: #f43f5e;
+      --accent-amber: #f59e0b;
+      --accent-emerald: #10b981;
+      --accent-purple: #8b5cf6;
+      --shadow-lg: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+      --glass-backdrop: blur(16px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.1) 0%, transparent 40%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background: rgba(11, 15, 25, 0.8);
+      backdrop-filter: var(--glass-backdrop);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-cyan));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+    }
+
+    .brand-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: #fff;
+      stroke-width: 2;
+    }
+
+    .brand h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      background: linear-gradient(to right, #ffffff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand span {
+      font-size: 0.75rem;
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .controls-bar {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .role-selector {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 0.25rem;
+      gap: 0.25rem;
+    }
+
+    .role-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .role-btn:hover {
+      color: #fff;
+    }
+
+    .role-btn.active {
+      background: var(--accent-primary);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+    }
+
+    .api-url-input {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.45rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      width: 220px;
+    }
+
+    .btn {
+      background: var(--accent-primary);
+      color: white;
+      border: none;
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      box-shadow: none;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .btn-danger {
+      background: var(--accent-rose);
+      box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Navigation Tabs */
+    .tabs-nav {
+      display: flex;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+    }
+
+    .tab-item {
+      padding: 0.6rem 1.2rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tab-item:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .tab-item.active {
+      color: #fff;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    /* Filter Section */
+    .filters-card {
+      background: var(--bg-card);
+      backdrop-filter: var(--glass-backdrop);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .filter-group label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .select-input, .text-input {
+      background: rgba(11, 15, 25, 0.6);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border 0.2s;
+      font-family: inherit;
+    }
+
+    .select-input:focus, .text-input:focus {
+      border-color: var(--accent-primary);
+    }
+
+    /* Bugs Grid & Cards */
+    .bugs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .bug-card {
+      background: var(--bg-card);
+      backdrop-filter: var(--glass-backdrop);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1rem;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bug-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--accent-primary);
+      opacity: 0.5;
+    }
+
+    .bug-card[data-priority="critical"]::before { background: var(--accent-rose); opacity: 1; }
+    .bug-card[data-priority="high"]::before { background: var(--accent-amber); opacity: 1; }
+    .bug-card[data-priority="medium"]::before { background: var(--accent-cyan); opacity: 0.8; }
+    .bug-card[data-priority="low"]::before { background: var(--accent-emerald); opacity: 0.6; }
+
+    .bug-card:hover {
+      background: var(--bg-card-hover);
+      transform: translateY(-3px);
+      border-color: var(--border-glow);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .bug-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .bug-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .bug-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #fff;
+      margin-top: 0.25rem;
+      line-height: 1.35;
+    }
+
+    .badges-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.5rem;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .badge-status-new { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); }
+    .badge-status-in_progress { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-status-resolved { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-status-closed { background: rgba(156, 163, 175, 0.2); color: #d1d5db; border: 1px solid rgba(156, 163, 175, 0.3); }
+
+    .badge-comp { background: rgba(255, 255, 255, 0.06); color: var(--text-muted); }
+
+    .bug-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 0.75rem;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .avatar-sm {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent-purple);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Modal / Drawer */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: #111827;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 650px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      transform: translateY(20px);
+      transition: transform 0.25s ease;
+    }
+
+    .modal-overlay.open .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .close-btn:hover {
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    textarea.text-input {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    .modal-footer {
+      padding: 1.25rem 1.5rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    /* Detail Drawer Specifics */
+    .comments-section {
+      margin-top: 1rem;
+      border-top: 1px solid var(--border-color);
+      padding-top: 1rem;
+    }
+
+    .comment-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 0.85rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .comment-body {
+      font-size: 0.9rem;
+      line-height: 1.4;
+      color: var(--text-main);
+    }
+
+    /* Logs view */
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    .log-table th, .log-table td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .log-table th {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #1e293b;
+      color: #fff;
+      padding: 0.85rem 1.25rem;
+      border-radius: 10px;
+      border: 1px solid var(--border-glow);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 200;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <div>
+        <h1>Bugzilla Modernization</h1>
+        <span>Person A & B Unified Testing Hub</span>
+      </div>
+    </div>
+
+    <div class="controls-bar">
+      <div class="role-selector">
+        <button class="role-btn active" data-role="developer" onclick="setRole('developer')">Developer</button>
+        <button class="role-btn" data-role="reporter" onclick="setRole('reporter')">Reporter</button>
+        <button class="role-btn" data-role="admin" onclick="setRole('admin')">Admin</button>
+        <button class="role-btn" data-role="tester" onclick="setRole('tester')">Tester</button>
+      </div>
+
+      <input type="text" id="apiUrlInput" class="api-url-input" value="http://localhost:8000" placeholder="API Base URL">
+
+      <button class="btn" onclick="openNewBugModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        New Bug
+      </button>
+    </div>
+  </header>
+
+  <!-- Main View -->
+  <main>
+    <!-- Navigation Tabs -->
+    <div class="tabs-nav">
+      <div class="tab-item active" id="tab-bugs" onclick="switchTab('bugs')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-6h2zm0-8h-2V7h2z"/></svg>
+        Bugs Directory
+      </div>
+      <div class="tab-item" id="tab-events" onclick="switchTab('events')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+        Audit Events Log
+      </div>
+      <div class="tab-item" id="tab-webhooks" onclick="switchTab('webhooks')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        Webhook Dispatch Logs
+      </div>
+    </div>
+
+    <!-- BUGS TAB CONTENT -->
+    <div id="view-bugs">
+      <div class="filters-card" style="margin-bottom: 1.5rem;">
+        <div class="filter-group">
+          <label>Status</label>
+          <select id="filterStatus" class="select-input" onchange="loadBugs()">
+            <option value="">All Statuses</option>
+            <option value="new">New</option>
+            <option value="assigned">Assigned</option>
+            <option value="in_progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Priority</label>
+          <select id="filterPriority" class="select-input" onchange="loadBugs()">
+            <option value="">All Priorities</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Severity</label>
+          <select id="filterSeverity" class="select-input" onchange="loadBugs()">
+            <option value="">All Severities</option>
+            <option value="minor">Minor</option>
+            <option value="moderate">Moderate</option>
+            <option value="major">Major</option>
+            <option value="critical">Critical</option>
+            <option value="blocker">Blocker</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Component</label>
+          <select id="filterComponent" class="select-input" onchange="loadBugs()">
+            <option value="">All Components</option>
+            <option value="ui">UI</option>
+            <option value="backend">Backend</option>
+            <option value="database">Database</option>
+            <option value="auth">Auth</option>
+            <option value="api">API</option>
+          </select>
+        </div>
+
+        <div class="filter-group" style="justify-content: flex-end;">
+          <label>&nbsp;</label>
+          <button class="btn btn-secondary" onclick="loadBugs()">Refresh</button>
+        </div>
+      </div>
+
+      <div id="bugsContainer" class="bugs-grid">
+        <!-- Bugs loaded dynamically -->
+      </div>
+    </div>
+
+    <!-- AUDIT EVENTS TAB -->
+    <div id="view-events" style="display: none;">
+      <div class="filters-card" style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+        <button class="btn btn-secondary" onclick="loadEvents()">Refresh Audit Log</button>
+      </div>
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Event Type</th>
+            <th>Bug ID</th>
+            <th>Processed</th>
+            <th>Payload</th>
+          </tr>
+        </thead>
+        <tbody id="eventsContainer">
+          <!-- Loaded dynamically -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- WEBHOOK LOGS TAB -->
+    <div id="view-webhooks" style="display: none;">
+      <div class="filters-card" style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+        <button class="btn btn-secondary" onclick="loadWebhooks()">Refresh Webhook Logs</button>
+      </div>
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Destination</th>
+            <th>Status</th>
+            <th>Response Code</th>
+            <th>Payload</th>
+          </tr>
+        </thead>
+        <tbody id="webhooksContainer">
+          <!-- Loaded dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Create Bug Modal -->
+  <div class="modal-overlay" id="createBugModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Report New Bug</h3>
+        <button class="close-btn" onclick="closeModal('createBugModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" id="newTitle" class="text-input" placeholder="Brief summary of the issue">
+        </div>
+
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="newDescription" class="text-input" placeholder="Steps to reproduce, expected behavior..."></textarea>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Priority</label>
+            <select id="newPriority" class="select-input">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Severity</label>
+            <select id="newSeverity" class="select-input">
+              <option value="minor">Minor</option>
+              <option value="moderate" selected>Moderate</option>
+              <option value="major">Major</option>
+              <option value="critical">Critical</option>
+              <option value="blocker">Blocker</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Component *</label>
+          <select id="newComponent" class="select-input">
+            <option value="backend">Backend</option>
+            <option value="ui">UI</option>
+            <option value="database">Database</option>
+            <option value="auth">Auth</option>
+            <option value="api">API</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('createBugModal')">Cancel</button>
+        <button class="btn" onclick="submitCreateBug()">Submit Bug</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bug Detail / Edit & Comment Drawer Modal -->
+  <div class="modal-overlay" id="detailBugModal">
+    <div class="modal-content" style="max-width: 750px;">
+      <div class="modal-header">
+        <div>
+          <span id="detailBugId" class="bug-id"></span>
+          <h3 id="detailTitle" style="margin-top: 0.25rem;">Bug Details</h3>
+        </div>
+        <button class="close-btn" onclick="closeModal('detailBugModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Edit controls -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 10px;">
+          <div class="form-group">
+            <label>Status (Update)</label>
+            <select id="detailStatus" class="select-input">
+              <option value="new">New</option>
+              <option value="assigned">Assigned</option>
+              <option value="in_progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Priority</label>
+            <select id="detailPriority" class="select-input">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="detailTitleInput" class="text-input">
+        </div>
+
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="detailDescription" class="text-input"></textarea>
+        </div>
+
+        <button class="btn" onclick="submitUpdateBug()" style="align-self: flex-end;">Save Changes</button>
+
+        <!-- Comments Section -->
+        <div class="comments-section">
+          <h4 style="margin-bottom: 0.75rem; font-size: 1rem; color: #fff;">Comments & Discussion</h4>
+          
+          <div id="commentsContainer">
+            <!-- Loaded dynamically -->
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+            <input type="text" id="newCommentInput" class="text-input" style="flex: 1;" placeholder="Add a comment as active role...">
+            <button class="btn btn-secondary" onclick="submitComment()">Post</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">Action completed successfully</div>
+
+  <script>
+    let currentRole = 'developer';
+    let currentBugId = null;
+
+    function getApiUrl() {
+      return document.getElementById('apiUrlInput').value.replace(/\/$/, '');
+    }
+
+    function getAuthHeader() {
+      return {
+        'Authorization': `Bearer test-${currentRole}`,
+        'Content-Type': 'application/json'
+      };
+    }
+
+    function setRole(role) {
+      currentRole = role;
+      document.querySelectorAll('.role-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.role === role);
+      });
+      showToast(`Switched active role to: ${role.toUpperCase()}`);
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+      document.getElementById(`tab-${tab}`).classList.add('active');
+
+      document.getElementById('view-bugs').style.display = tab === 'bugs' ? 'block' : 'none';
+      document.getElementById('view-events').style.display = tab === 'events' ? 'block' : 'none';
+      document.getElementById('view-webhooks').style.display = tab === 'webhooks' ? 'block' : 'none';
+
+      if (tab === 'bugs') loadBugs();
+      if (tab === 'events') loadEvents();
+      if (tab === 'webhooks') loadWebhooks();
+    }
+
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.style.borderColor = isError ? 'var(--accent-rose)' : 'var(--border-glow)';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function openNewBugModal() {
+      document.getElementById('createBugModal').classList.add('open');
+    }
+
+    async function loadBugs() {
+      const status = document.getElementById('filterStatus').value;
+      const priority = document.getElementById('filterPriority').value;
+      const severity = document.getElementById('filterSeverity').value;
+      const component = document.getElementById('filterComponent').value;
+
+      let query = new URLSearchParams();
+      if (status) query.append('status', status);
+      if (priority) query.append('priority', priority);
+      if (severity) query.append('severity', severity);
+      if (component) query.append('component', component);
+
+      try {
+        const res = await fetch(`${getApiUrl()}/api/v1/bugs?${query.toString()}`, {
+          headers: getAuthHeader()
+        });
+        const envelope = await res.json();
+        
+        if (envelope.error) {
+          showToast(`Error: ${envelope.error.message}`, true);
+          return;
+        }
+
+        renderBugs(envelope.data.items || []);
+      } catch (err) {
+        showToast(`Failed to fetch bugs: ${err.message}`, true);
+      }
+    }
+
+    function renderBugs(bugs) {
+      const container = document.getElementById('bugsContainer');
+      if (!bugs.length) {
+        container.innerHTML = `
+          <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: var(--text-muted);">
+            No bugs found. Create one or clear your filters.
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = bugs.map(b => `
+        <div class="bug-card" data-priority="${b.priority}" onclick="openBugDetail('${b.id}')">
+          <div class="bug-header">
+            <div>
+              <span class="bug-id">${b.id.substring(0, 8)}...</span>
+              <h3 class="bug-title">${escapeHtml(b.title)}</h3>
+            </div>
+          </div>
+
+          <div class="badges-row">
+            <span class="badge badge-status-${b.status}">${b.status.replace('_', ' ')}</span>
+            <span class="badge badge-comp">${b.component}</span>
+            <span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted);">${b.priority}</span>
+          </div>
+
+          <div class="bug-footer">
+            <div class="user-info">
+              <div class="avatar-sm">${(b.assignee?.name || 'U').charAt(0)}</div>
+              <span>${escapeHtml(b.assignee?.name || 'Unassigned')}</span>
+            </div>
+            <span>${new Date(b.created_at).toLocaleDateString()}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function submitCreateBug() {
+      const title = document.getElementById('newTitle').value;
+      const description = document.getElementById('newDescription').value;
+      const priority = document.getElementById('newPriority').value;
+      const severity = document.getElementById('newSeverity').value;
+      const component = document.getElementById('newComponent').value;
+
+      if (!title) {
+        showToast("Title is required", true);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getApiUrl()}/api/v1/bugs`, {
+          method: 'POST',
+          headers: getAuthHeader(),
+          body: JSON.stringify({ title, description, priority, severity, component })
+        });
+        const envelope = await res.json();
+
+        if (envelope.error) {
+          showToast(`Creation failed: ${envelope.error.message}`, true);
+          return;
+        }
+
+        showToast("Bug reported successfully!");
+        closeModal('createBugModal');
+        document.getElementById('newTitle').value = '';
+        document.getElementById('newDescription').value = '';
+        loadBugs();
+      } catch (err) {
+        showToast(`Failed to create bug: ${err.message}`, true);
+      }
+    }
+
+    async function openBugDetail(id) {
+      currentBugId = id;
+      try {
+        const res = await fetch(`${getApiUrl()}/api/v1/bugs/${id}`, {
+          headers: getAuthHeader()
+        });
+        const envelope = await res.json();
+
+        if (envelope.error) {
+          showToast(`Error: ${envelope.error.message}`, true);
+          return;
+        }
+
+        const bug = envelope.data;
+        document.getElementById('detailBugId').textContent = bug.id;
+        document.getElementById('detailTitle').textContent = bug.title;
+        document.getElementById('detailTitleInput').value = bug.title;
+        document.getElementById('detailDescription').value = bug.description || '';
+        document.getElementById('detailStatus').value = bug.status;
+        document.getElementById('detailPriority').value = bug.priority;
+
+        document.getElementById('detailBugModal').classList.add('open');
+        loadComments(id);
+      } catch (err) {
+        showToast(`Failed to fetch bug details: ${err.message}`, true);
+      }
+    }
+
+    async function submitUpdateBug() {
+      if (!currentBugId) return;
+
+      const title = document.getElementById('detailTitleInput').value;
+      const description = document.getElementById('detailDescription').value;
+      const status = document.getElementById('detailStatus').value;
+      const priority = document.getElementById('detailPriority').value;
+
+      try {
+        const res = await fetch(`${getApiUrl()}/api/v1/bugs/${currentBugId}`, {
+          method: 'PATCH',
+          headers: getAuthHeader(),
+          body: JSON.stringify({ title, description, status, priority })
+        });
+        const envelope = await res.json();
+
+        if (envelope.error) {
+          showToast(`Update failed: ${envelope.error.message}`, true);
+          return;
+        }
+
+        showToast("Bug updated successfully!");
+        loadBugs();
+      } catch (err) {
+        showToast(`Update failed: ${err.message}`, true);
+      }
+    }
+
+    async function loadComments(bugId) {
+      try {
+        const res = await fetch(`${getApiUrl()}/api/v1/bugs/${bugId}/comments`, {
+          headers: getAuthHeader()
+        });
+        const envelope = await res.json();
+        const comments = envelope.data || [];
+
+        const container = document.getElementById('commentsContainer');
+        if (!comments.length) {
+          container.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-muted);">No comments yet.</p>`;
+          return;
+        }
+
+        container.innerHTML = comments.map(c => `
+          <div class="comment-item">
+            <div class="comment-header">
+              <strong>${escapeHtml(c.user?.name || 'User')}</strong>
+              <span>${new Date(c.created_at).toLocaleTimeString()}</span>
+            </div>
+            <div class="comment-body">${escapeHtml(c.body)}</div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Comments fetch error:', err);
+      }
+    }
+
+    async function submitComment() {
+      const input = document.getElementById('newCommentInput');
+      const body = input.value.trim();
+      if (!body || !currentBugId) return;
+
+      try {
+        const res = await fetch(`${getApiUrl()}/api/v1/bugs/${currentBugId}/comments`, {
+          method: 'POST',
+          headers: getAuthHeader(),
+          body: JSON.stringify({ body })
+        });
+        const envelope = await res.json();
+
+        if (envelope.error) {
+          showToast(`Comment failed: ${envelope.error.message}`, true);
+          return;
+        }
+
+        input.value = '';
+        loadComments(currentBugId);
+        showToast("Comment added!");
+      } catch (err) {
+        showToast(`Comment failed: ${err.message}`, true);
+      }
+    }
+
+    async function loadEvents() {
+      try {
+        const res = await fetch(`${getApiUrl()}/api/v1/events`, { headers: getAuthHeader() });
+        const envelope = await res.json();
+        const items = envelope.data?.items || [];
+        const container = document.getElementById('eventsContainer');
+
+        if (!items.length) {
+          container.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No audit events recorded yet.</td></tr>`;
+          return;
+        }
+
+        container.innerHTML = items.map(e => `
+          <tr>
+            <td>${new Date(e.created_at || Date.now()).toLocaleString()}</td>
+            <td><strong style="color: var(--accent-cyan);">${e.event_type}</strong></td>
+            <td style="font-family: monospace;">${(e.bug_id || '-').substring(0, 8)}</td>
+            <td>${e.processed ? '✅' : '⏳'}</td>
+            <td style="font-family: monospace; font-size: 0.75rem;">${JSON.stringify(e.payload)}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        showToast(`Failed to load events: ${err.message}`, true);
+      }
+    }
+
+    async function loadWebhooks() {
+      try {
+        const res = await fetch(`${getApiUrl()}/api/v1/webhook-logs`, { headers: getAuthHeader() });
+        const envelope = await res.json();
+        const items = envelope.data?.items || [];
+        const container = document.getElementById('webhooksContainer');
+
+        if (!items.length) {
+          container.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No webhook logs recorded yet.</td></tr>`;
+          return;
+        }
+
+        container.innerHTML = items.map(w => `
+          <tr>
+            <td>${new Date(w.created_at || Date.now()).toLocaleString()}</td>
+            <td><strong>${w.destination}</strong></td>
+            <td>${w.success ? '🟢 Success' : '🔴 Failed'}</td>
+            <td>${w.response_code || '-'}</td>
+            <td style="font-family: monospace; font-size: 0.75rem;">${JSON.stringify(w.payload)}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        showToast(`Failed to load webhooks: ${err.message}`, true);
+      }
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // Initial load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadBugs();
+    });
+  </script>
+</body>
+</html>

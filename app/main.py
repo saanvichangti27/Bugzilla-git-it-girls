@@ -73,14 +73,26 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.get("/")
 def root():
     return {
-        "service": "Bugzilla Modernization Platform - Person A (Phase 1)",
+        "service": "Bugzilla Modernization Platform",
         "status": "running",
+        "testing_ui": "/ui",
         "api_docs": "/docs",
         "api_v1_bugs": f"{settings.API_PREFIX}/bugs"
     }
+
+from os.path import exists
+from fastapi.responses import FileResponse
+
+@app.get("/ui", include_in_schema=False)
+@app.get("/app", include_in_schema=False)
+def serve_ui():
+    if exists("static/index.html"):
+        return FileResponse("static/index.html")
+    return JSONResponse({"message": "Testing UI template not found"})
 
 # Mount Person A & C routers under /api/v1
 app.include_router(bugs.router, prefix=settings.API_PREFIX)
 app.include_router(comments.router, prefix=settings.API_PREFIX)
 app.include_router(events.router, prefix=settings.API_PREFIX)
 app.include_router(webhook_logs.router, prefix=settings.API_PREFIX)
+

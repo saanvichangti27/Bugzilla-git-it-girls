@@ -24,6 +24,7 @@ class Database:
         self.comments_db: Dict[str, List[dict]] = {}
         self.events_db: Dict[str, dict] = {}
         self.webhook_logs_db: Dict[str, dict] = {}
+        self.users_db: Dict[str, dict] = {}
         self._seed_data()
 
     def _seed_data(self):
@@ -59,6 +60,29 @@ class Database:
                 "created_at": now.isoformat(),
             }
         ]
+        
+        # Seed users
+        self.users_db["user-reporter-id"] = {
+            "id": "user-reporter-id",
+            "name": "Test Reporter User",
+            "email": "reporter@example.com",
+            "role": "reporter",
+            "created_at": now.isoformat()
+        }
+        self.users_db["user-developer-id"] = {
+            "id": "user-developer-id",
+            "name": "Test Developer User",
+            "email": "developer@example.com",
+            "role": "developer",
+            "created_at": now.isoformat()
+        }
+        self.users_db["user-admin-id"] = {
+            "id": "user-admin-id",
+            "name": "Test Admin User",
+            "email": "admin@example.com",
+            "role": "admin",
+            "created_at": now.isoformat()
+        }
 
     # --- BUG METHODS ---
     def create_bug(self, bug_data: dict, reporter: UserSummary) -> dict:
@@ -372,5 +396,98 @@ class Database:
         start = (page - 1) * page_size
         paginated = items[start:start + page_size]
         return paginated, total
+
+    # --- USER METHODS ---
+    def create_user(self, user_id: str, name: str, email: str, role: str = "reporter") -> dict:
+        now = datetime.now(timezone.utc).isoformat()
+        doc = {
+            "id": user_id,
+            "name": name,
+            "email": email,
+            "role": role,
+            "created_at": now
+        }
+        
+        if self.use_supabase:
+            try:
+                res = self.client.table("users").insert(doc).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as e:
+                print(f"[SUPABASE ERROR] create_user failed: {e}. Falling back to memory.")
+
+        self.users_db[user_id] = doc
+        return doc
+        
+    def get_user_by_id(self, user_id: str) -> Optional[dict]:
+        if self.use_supabase:
+            try:
+                res = self.client.table("users").select("*").eq("id", user_id).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as e:
+                print(f"[SUPABASE ERROR] get_user_by_id failed: {e}. Falling back to memory.")
+        return self.users_db.get(user_id)
+
+    def search_users(self, search: Optional[str]) -> List[dict]:
+        if self.use_supabase:
+            try:
+                query = self.client.table("users").select("*")
+                if search:
+                    query = query.ilike("name", f"%{search}%")
+                res = query.execute()
+                return res.data or []
+            except Exception as e:
+                print(f"[SUPABASE ERROR] search_users failed: {e}. Falling back to memory.")
+        
+        users = list(self.users_db.values())
+        if search:
+            search = search.lower()
+            users = [u for u in users if search in u.get("name", "").lower()]
+        return users
+
+    def update_user_role(self, user_id: str, new_role: str) -> Optional[dict]:
+        if self.use_supabase:
+            try:
+                res = self.client.table("users").update({"role": new_role}).eq("id", user_id).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as e:
+                print(f"[SUPABASE ERROR] update_user_role failed: {e}. Falling back to memory.")
+        
+        if user_id in self.users_db:
+            self.users_db[user_id]["role"] = new_role
+            return self.users_db[user_id]
+        return None
+
+    # --- DASHBOARD METHODS ---
+    def get_dashboard_summary(self, user_id: str) -> dict:
+        now = datetime.now(timezone.utc)
+        start_of_week = now.date().isoformat() # Approximating to avoid complex date math in sqlite/mem
+        
+        if self.use_supabase:
+            try:
+                open_bugs = self.client.table("bugs").select("id", count="exact").in_("status", ["new", "in_progress"]).execute().count
+                assigned = self.client.table("bugs").select("id", count="exact").eq("assignee_id", user_id).in_("status", ["new", "in_progress"]).execute().count
+                resolved = self.client.table("bugs").select("id", count="exact").eq("status", "resolved").gte("updated_at", start_of_week).execute().count
+                
+                return {
+                    "open_bugs": open_bugs or 0,
+                    "assigned_to_me": assigned or 0,
+                    "resolved_this_week": resolved or 0
+                }
+            except Exception as e:
+                print(f"[SUPABASE ERROR] get_dashboard_summary failed: {e}. Falling back to memory.")
+        
+        bugs = list(self.bugs_db.values())
+        open_bugs = len([b for b in bugs if b.get("status") in ["new", "in_progress"]])
+        assigned = len([b for b in bugs if b.get("assignee_id") == user_id and b.get("status") in ["new", "in_progress"]])
+        resolved = len([b for b in bugs if b.get("status") == "resolved" and b.get("updated_at", "") >= start_of_week])
+        
+        return {
+            "open_bugs": open_bugs,
+            "assigned_to_me": assigned,
+            "resolved_this_week": resolved
+        }
 
 db = Database()

@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.config import settings
-from app.routers import bugs, comments, events, webhook_logs
+from app.routers import bugs, comments, events, webhook_logs, auth, users, dashboard
 from app.services.dispatcher import start_dispatcher
 
 @asynccontextmanager
@@ -96,3 +96,7 @@ app.include_router(comments.router, prefix=settings.API_PREFIX)
 app.include_router(events.router, prefix=settings.API_PREFIX)
 app.include_router(webhook_logs.router, prefix=settings.API_PREFIX)
 
+# Mount Person B routers under /api/v1
+app.include_router(auth.router, prefix=settings.API_PREFIX)
+app.include_router(users.router, prefix=settings.API_PREFIX)
+app.include_router(dashboard.router, prefix=settings.API_PREFIX)

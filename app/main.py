@@ -2,13 +2,21 @@ from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from app.config import settings
-from app.routers import bugs, comments
+from app.routers import bugs, comments, events, webhook_logs
+from app.services.dispatcher import start_dispatcher
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    start_dispatcher()
+    yield
 
 app = FastAPI(
-    title="Bugzilla Modernization Platform - Person A (Phase 1)",
+    title="Bugzilla Modernization Platform",
     description="Bugs and Comments REST API with strict role-based authorization",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS configuration
@@ -71,6 +79,8 @@ def root():
         "api_v1_bugs": f"{settings.API_PREFIX}/bugs"
     }
 
-# Mount Person A routers under /api/v1
+# Mount Person A & C routers under /api/v1
 app.include_router(bugs.router, prefix=settings.API_PREFIX)
 app.include_router(comments.router, prefix=settings.API_PREFIX)
+app.include_router(events.router, prefix=settings.API_PREFIX)
+app.include_router(webhook_logs.router, prefix=settings.API_PREFIX)

@@ -190,7 +190,23 @@ def update_bug(
                     "message": f"Reporters/testers are not permitted to edit fields: {', '.join(sorted(disallowed_fields))}"
                 }
             )
-    elif role not in ["developer", "admin"]:
+    elif role == "developer":
+        # Developers may update any field, but status transitions are restricted:
+        # they can only move bugs to in_progress or ready_for_testing.
+        if "status" in provided_fields:
+            allowed_transitions = {StatusEnum.IN_PROGRESS.value, StatusEnum.READY_FOR_TESTING.value}
+            new_status = provided_fields["status"]
+            # Handle both enum value strings and StatusEnum instances
+            new_status_val = new_status.value if hasattr(new_status, 'value') else new_status
+            if new_status_val not in allowed_transitions:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={
+                        "code": "FORBIDDEN",
+                        "message": f"Developers can only set status to 'in_progress' or 'ready_for_testing', not '{new_status_val}'."
+                    }
+                )
+    elif role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={"code": "FORBIDDEN", "message": f"Role '{role}' is not authorized to edit bugs."}

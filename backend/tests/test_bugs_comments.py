@@ -38,7 +38,7 @@ def test_create_bug():
     data = body["data"]
     assert data["title"] == "Dropdown glitch on Chrome"
     assert data["status"] == "new"
-    assert data["reporter"]["id"] == "user-reporter-id"
+    assert data["reporter"]["id"] == "11111111-1111-1111-1111-111111111102"
 
 def test_get_bugs_list():
     res = client.get("/api/v1/bugs?priority=high", headers=DEVELOPER_HEADERS)

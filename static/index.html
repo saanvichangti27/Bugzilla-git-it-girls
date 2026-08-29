@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bugzilla Modernization Platform - Testing Dashboard</title>
+  <title>Bugzilla Modernization Platform - Unified Testing Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #0b0f19;
-      --bg-card: rgba(22, 29, 47, 0.7);
-      --bg-card-hover: rgba(30, 41, 67, 0.85);
+      --bg-dark: #090d16;
+      --bg-card: rgba(18, 26, 43, 0.75);
+      --bg-card-hover: rgba(28, 40, 65, 0.85);
+      --bg-input: rgba(10, 15, 26, 0.7);
       --border-color: rgba(255, 255, 255, 0.08);
-      --border-glow: rgba(99, 102, 241, 0.3);
+      --border-glow: rgba(99, 102, 241, 0.35);
       --text-main: #f3f4f6;
       --text-muted: #9ca3af;
       --accent-primary: #6366f1;
@@ -23,37 +24,34 @@
       --accent-amber: #f59e0b;
       --accent-emerald: #10b981;
       --accent-purple: #8b5cf6;
-      --shadow-lg: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
       --glass-backdrop: blur(16px);
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Outfit', sans-serif;
       background-color: var(--bg-dark);
       background-image: 
-        radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
-        radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.1) 0%, transparent 40%);
+        radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.14) 0%, transparent 45%),
+        radial-gradient(circle at 90% 90%, rgba(6, 182, 212, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 60%);
       color: var(--text-main);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
-    /* Header */
+    /* HEADER */
     header {
-      background: rgba(11, 15, 25, 0.8);
+      background: rgba(9, 13, 22, 0.85);
       backdrop-filter: var(--glass-backdrop);
       border-bottom: 1px solid var(--border-color);
       position: sticky;
       top: 0;
       z-index: 50;
-      padding: 1rem 2rem;
+      padding: 0.85rem 2rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -62,237 +60,317 @@
     .brand {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.85rem;
     }
 
-    .brand-icon {
-      width: 38px;
-      height: 38px;
+    .brand-logo {
+      width: 42px;
+      height: 42px;
       background: linear-gradient(135deg, var(--accent-primary), var(--accent-cyan));
-      border-radius: 10px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
     }
 
-    .brand-icon svg {
-      width: 22px;
-      height: 22px;
+    .brand-logo svg {
+      width: 24px;
+      height: 24px;
       fill: none;
       stroke: #fff;
-      stroke-width: 2;
+      stroke-width: 2.2;
     }
 
-    .brand h1 {
+    .brand-text h1 {
       font-size: 1.25rem;
       font-weight: 700;
-      background: linear-gradient(to right, #ffffff, #94a3b8);
+      letter-spacing: -0.02em;
+      background: linear-gradient(to right, #ffffff, #cbd5e1);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
-    .brand span {
-      font-size: 0.75rem;
-      background: rgba(99, 102, 241, 0.2);
+    .brand-text span {
+      font-size: 0.72rem;
+      background: rgba(99, 102, 241, 0.18);
       color: #a5b4fc;
-      padding: 0.2rem 0.5rem;
+      padding: 0.15rem 0.5rem;
       border-radius: 6px;
       border: 1px solid rgba(99, 102, 241, 0.3);
+      font-weight: 600;
     }
 
-    .controls-bar {
+    .header-actions {
       display: flex;
       align-items: center;
       gap: 1.25rem;
     }
 
-    .role-selector {
+    /* ROLE SWITCHER */
+    .role-badge-box {
       display: flex;
       align-items: center;
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-color);
       border-radius: 10px;
       padding: 0.25rem;
-      gap: 0.25rem;
+      gap: 0.2rem;
     }
 
-    .role-btn {
+    .role-chip {
       background: transparent;
       border: none;
       color: var(--text-muted);
-      padding: 0.4rem 0.8rem;
-      font-size: 0.85rem;
-      font-weight: 500;
-      border-radius: 7px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border-radius: 8px;
       cursor: pointer;
       transition: all 0.2s ease;
       font-family: inherit;
     }
 
-    .role-btn:hover {
-      color: #fff;
-    }
+    .role-chip:hover { color: #fff; }
 
-    .role-btn.active {
+    .role-chip.active {
       background: var(--accent-primary);
       color: #fff;
-      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.45);
     }
 
-    .api-url-input {
-      background: rgba(255, 255, 255, 0.04);
+    .api-endpoint-box {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .api-input {
+      background: var(--bg-input);
       border: 1px solid var(--border-color);
       color: var(--text-main);
       padding: 0.45rem 0.75rem;
       border-radius: 8px;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-family: 'JetBrains Mono', monospace;
-      width: 220px;
+      width: 210px;
     }
 
+    /* BUTTONS */
     .btn {
-      background: var(--accent-primary);
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
       color: white;
       border: none;
-      padding: 0.55rem 1.1rem;
-      border-radius: 8px;
+      padding: 0.55rem 1.15rem;
+      border-radius: 9px;
       font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 0.875rem;
       cursor: pointer;
       transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
       font-family: inherit;
     }
 
     .btn:hover {
-      background: var(--accent-hover);
       transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.5);
     }
 
     .btn-secondary {
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border-color);
       color: var(--text-main);
       box-shadow: none;
     }
 
     .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.1);
     }
 
-    .btn-danger {
-      background: var(--accent-rose);
-      box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
+    .btn-sm {
+      padding: 0.35rem 0.75rem;
+      font-size: 0.8rem;
     }
 
-    /* Main Container */
+    /* MAIN CONTAINER */
     main {
       flex: 1;
-      max-width: 1400px;
+      max-width: 1440px;
       width: 100%;
       margin: 0 auto;
-      padding: 2rem;
+      padding: 1.75rem 2rem;
       display: flex;
       flex-direction: column;
-      gap: 2rem;
+      gap: 1.5rem;
     }
 
-    /* Navigation Tabs */
-    .tabs-nav {
-      display: flex;
+    /* STATS OVERVIEW BAR */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 1rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      backdrop-filter: var(--glass-backdrop);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .stat-val {
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-top: 0.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    /* TABS */
+    .tab-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       border-bottom: 1px solid var(--border-color);
       padding-bottom: 0.5rem;
     }
 
-    .tab-item {
+    .tabs-group {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .tab-btn {
       padding: 0.6rem 1.2rem;
       font-weight: 600;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       color: var(--text-muted);
       cursor: pointer;
-      border-radius: 8px;
+      border-radius: 9px;
       transition: all 0.2s;
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      border: 1px solid transparent;
     }
 
-    .tab-item:hover {
+    .tab-btn:hover {
       color: #fff;
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(255, 255, 255, 0.04);
     }
 
-    .tab-item.active {
+    .tab-btn.active {
       color: #fff;
       background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-color: rgba(99, 102, 241, 0.35);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
     }
 
-    /* Filter Section */
-    .filters-card {
+    /* FILTERS CARD */
+    .filters-bar {
       background: var(--bg-card);
       backdrop-filter: var(--glass-backdrop);
       border: 1px solid var(--border-color);
-      border-radius: 14px;
-      padding: 1.25rem;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) auto;
       gap: 1rem;
       align-items: center;
     }
 
-    .filter-group {
+    .filter-item {
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
+      gap: 0.3rem;
     }
 
-    .filter-group label {
-      font-size: 0.75rem;
+    .filter-item label {
+      font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--text-muted);
-      font-weight: 600;
+      font-weight: 700;
     }
 
-    .select-input, .text-input {
-      background: rgba(11, 15, 25, 0.6);
+    .select-box, .input-box {
+      background: var(--bg-input);
       border: 1px solid var(--border-color);
       color: var(--text-main);
       padding: 0.5rem 0.75rem;
       border-radius: 8px;
-      font-size: 0.875rem;
+      font-size: 0.85rem;
       outline: none;
       transition: border 0.2s;
       font-family: inherit;
     }
 
-    .select-input:focus, .text-input:focus {
+    .select-box:focus, .input-box:focus {
       border-color: var(--accent-primary);
     }
 
-    /* Bugs Grid & Cards */
-    .bugs-grid {
+    /* VIEW MODES (GRID & KANBAN) */
+    .bugs-container-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
       gap: 1.25rem;
     }
 
+    .kanban-board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .kanban-col {
+      background: rgba(18, 26, 43, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-height: 450px;
+    }
+
+    .kanban-col-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    /* BUG CARDS */
     .bug-card {
       background: var(--bg-card);
       backdrop-filter: var(--glass-backdrop);
       border: 1px solid var(--border-color);
-      border-radius: 14px;
-      padding: 1.25rem;
+      border-radius: 12px;
+      padding: 1.15rem;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      gap: 1rem;
+      gap: 0.85rem;
       cursor: pointer;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
@@ -307,101 +385,82 @@
       width: 4px;
       height: 100%;
       background: var(--accent-primary);
-      opacity: 0.5;
     }
 
-    .bug-card[data-priority="critical"]::before { background: var(--accent-rose); opacity: 1; }
-    .bug-card[data-priority="high"]::before { background: var(--accent-amber); opacity: 1; }
-    .bug-card[data-priority="medium"]::before { background: var(--accent-cyan); opacity: 0.8; }
-    .bug-card[data-priority="low"]::before { background: var(--accent-emerald); opacity: 0.6; }
+    .bug-card[data-priority="critical"]::before { background: var(--accent-rose); }
+    .bug-card[data-priority="high"]::before { background: var(--accent-amber); }
+    .bug-card[data-priority="medium"]::before { background: var(--accent-cyan); }
+    .bug-card[data-priority="low"]::before { background: var(--accent-emerald); }
 
     .bug-card:hover {
       background: var(--bg-card-hover);
-      transform: translateY(-3px);
+      transform: translateY(-2px);
       border-color: var(--border-glow);
       box-shadow: var(--shadow-lg);
     }
 
-    .bug-header {
+    .bug-card-head {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 0.75rem;
     }
 
-    .bug-id {
+    .bug-card-id {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
-      color: var(--text-muted);
+      font-size: 0.72rem;
+      color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.1);
+      padding: 0.15rem 0.45rem;
+      border-radius: 5px;
+      border: 1px solid rgba(6, 182, 212, 0.2);
     }
 
-    .bug-title {
-      font-size: 1.05rem;
+    .bug-card-title {
+      font-size: 1rem;
       font-weight: 600;
       color: #fff;
-      margin-top: 0.25rem;
+      margin-top: 0.35rem;
       line-height: 1.35;
     }
 
-    .badges-row {
+    .tags-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.4rem;
-      margin-top: 0.5rem;
+      gap: 0.35rem;
     }
 
-    .badge {
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 0.2rem 0.55rem;
-      border-radius: 6px;
+    .tag {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.18rem 0.5rem;
+      border-radius: 5px;
       text-transform: uppercase;
       letter-spacing: 0.03em;
     }
 
-    .badge-status-new { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); }
-    .badge-status-in_progress { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .badge-status-resolved { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .badge-status-closed { background: rgba(156, 163, 175, 0.2); color: #d1d5db; border: 1px solid rgba(156, 163, 175, 0.3); }
+    .tag-status-new { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); }
+    .tag-status-in_progress { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .tag-status-resolved { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .tag-status-closed { background: rgba(156, 163, 175, 0.2); color: #d1d5db; border: 1px solid rgba(156, 163, 175, 0.3); }
 
-    .badge-comp { background: rgba(255, 255, 255, 0.06); color: var(--text-muted); }
+    .tag-comp { background: rgba(255, 255, 255, 0.06); color: var(--text-muted); }
+    .tag-sev { background: rgba(139, 92, 246, 0.15); color: #c084fc; }
 
-    .bug-footer {
+    .bug-card-foot {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-muted);
       border-top: 1px solid rgba(255, 255, 255, 0.05);
-      padding-top: 0.75rem;
+      padding-top: 0.65rem;
     }
 
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .avatar-sm {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: var(--accent-purple);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.65rem;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    /* Modal / Drawer */
-    .modal-overlay {
+    /* MODAL DRAWER */
+    .modal-backdrop {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
       background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(8px);
       z-index: 100;
@@ -413,55 +472,51 @@
       transition: opacity 0.25s ease;
     }
 
-    .modal-overlay.open {
+    .modal-backdrop.active {
       opacity: 1;
       pointer-events: auto;
     }
 
-    .modal-content {
+    .modal-box {
       background: #111827;
       border: 1px solid var(--border-color);
       border-radius: 16px;
       width: 90%;
-      max-width: 650px;
+      max-width: 680px;
       max-height: 85vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      box-shadow: var(--shadow-lg);
       transform: translateY(20px);
       transition: transform 0.25s ease;
     }
 
-    .modal-overlay.open .modal-content {
+    .modal-backdrop.active .modal-box {
       transform: translateY(0);
     }
 
-    .modal-header {
+    .modal-head {
       padding: 1.25rem 1.5rem;
       border-bottom: 1px solid var(--border-color);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: rgba(255, 255, 255, 0.02);
     }
 
-    .modal-header h3 {
-      font-size: 1.15rem;
-      font-weight: 700;
-    }
+    .modal-head h3 { font-size: 1.15rem; font-weight: 700; }
 
-    .close-btn {
+    .close-icon {
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 1.4rem;
+      font-size: 1.5rem;
       cursor: pointer;
       line-height: 1;
     }
 
-    .close-btn:hover {
-      color: #fff;
-    }
+    .close-icon:hover { color: #fff; }
 
     .modal-body {
       padding: 1.5rem;
@@ -471,27 +526,27 @@
       gap: 1.25rem;
     }
 
-    .form-group {
+    .form-field {
       display: flex;
       flex-direction: column;
-      gap: 0.4rem;
+      gap: 0.35rem;
     }
 
-    .form-group label {
-      font-size: 0.8rem;
-      font-weight: 600;
+    .form-field label {
+      font-size: 0.75rem;
+      font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
 
-    textarea.text-input {
+    textarea.input-box {
       resize: vertical;
       min-height: 90px;
     }
 
-    .modal-footer {
-      padding: 1.25rem 1.5rem;
+    .modal-foot {
+      padding: 1.1rem 1.5rem;
       border-top: 1px solid var(--border-color);
       display: flex;
       justify-content: flex-end;
@@ -499,14 +554,14 @@
       background: rgba(0, 0, 0, 0.2);
     }
 
-    /* Detail Drawer Specifics */
-    .comments-section {
-      margin-top: 1rem;
+    /* COMMENTS SECTION */
+    .comments-wrapper {
       border-top: 1px solid var(--border-color);
       padding-top: 1rem;
+      margin-top: 0.5rem;
     }
 
-    .comment-item {
+    .comment-card {
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-color);
       border-radius: 10px;
@@ -514,43 +569,48 @@
       margin-bottom: 0.75rem;
     }
 
-    .comment-header {
+    .comment-meta {
       display: flex;
       justify-content: space-between;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-muted);
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.35rem;
     }
 
-    .comment-body {
-      font-size: 0.9rem;
-      line-height: 1.4;
-      color: var(--text-main);
-    }
-
-    /* Logs view */
-    .log-table {
+    /* DATA TABLES */
+    .data-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.875rem;
+      font-size: 0.85rem;
     }
 
-    .log-table th, .log-table td {
+    .data-table th, .data-table td {
       padding: 0.75rem 1rem;
       text-align: left;
       border-bottom: 1px solid var(--border-color);
     }
 
-    .log-table th {
-      background: rgba(255, 255, 255, 0.04);
+    .data-table th {
+      background: rgba(255, 255, 255, 0.03);
       color: var(--text-muted);
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
     }
 
-    /* Toast Notification */
-    .toast {
+    .code-snippet {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      background: rgba(0,0,0,0.4);
+      padding: 0.35rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.05);
+      color: var(--accent-cyan);
+    }
+
+    /* TOAST */
+    .toast-msg {
       position: fixed;
       bottom: 2rem;
       right: 2rem;
@@ -559,14 +619,15 @@
       padding: 0.85rem 1.25rem;
       border-radius: 10px;
       border: 1px solid var(--border-glow);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
       z-index: 200;
       opacity: 0;
       transform: translateY(20px);
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-weight: 500;
     }
 
-    .toast.show {
+    .toast-msg.visible {
       opacity: 1;
       transform: translateY(0);
     }
@@ -574,71 +635,123 @@
 </head>
 <body>
 
-  <!-- Header -->
+  <!-- HEADER -->
   <header>
     <div class="brand">
-      <div class="brand-icon">
+      <div class="brand-logo">
         <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
       </div>
-      <div>
-        <h1>Bugzilla Modernization</h1>
-        <span>Person A & B Unified Testing Hub</span>
+      <div class="brand-text">
+        <h1>Bugzilla Modernization Platform</h1>
+        <span>Full Feature Testing Console</span>
       </div>
     </div>
 
-    <div class="controls-bar">
-      <div class="role-selector">
-        <button class="role-btn active" data-role="developer" onclick="setRole('developer')">Developer</button>
-        <button class="role-btn" data-role="reporter" onclick="setRole('reporter')">Reporter</button>
-        <button class="role-btn" data-role="admin" onclick="setRole('admin')">Admin</button>
-        <button class="role-btn" data-role="tester" onclick="setRole('tester')">Tester</button>
+    <div class="header-actions">
+      <!-- Active Role Sandbox -->
+      <div class="role-badge-box">
+        <button class="role-chip active" data-role="developer" onclick="selectRole('developer')">Developer</button>
+        <button class="role-chip" data-role="reporter" onclick="selectRole('reporter')">Reporter</button>
+        <button class="role-chip" data-role="admin" onclick="selectRole('admin')">Admin</button>
+        <button class="role-chip" data-role="tester" onclick="selectRole('tester')">Tester</button>
       </div>
 
-      <input type="text" id="apiUrlInput" class="api-url-input" value="http://localhost:8000" placeholder="API Base URL">
+      <div class="api-endpoint-box">
+        <input type="text" id="apiBaseUrl" class="api-input" value="http://localhost:8000" placeholder="API Server Base URL">
+      </div>
 
-      <button class="btn" onclick="openNewBugModal()">
+      <button class="btn" onclick="showModal('createModal')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        New Bug
+        Create Bug
       </button>
     </div>
   </header>
 
-  <!-- Main View -->
+  <!-- MAIN -->
   <main>
-    <!-- Navigation Tabs -->
-    <div class="tabs-nav">
-      <div class="tab-item active" id="tab-bugs" onclick="switchTab('bugs')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-6h2zm0-8h-2V7h2z"/></svg>
-        Bugs Directory
+    <!-- TOP STATS BAR -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">Total Bugs</div>
+          <div class="stat-val" id="statTotal">0</div>
+        </div>
+        <span style="color: var(--accent-primary); font-size: 1.5rem;">🐞</span>
       </div>
-      <div class="tab-item" id="tab-events" onclick="switchTab('events')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-        Audit Events Log
+
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">New / Open</div>
+          <div class="stat-val" id="statNew" style="color: #a5b4fc;">0</div>
+        </div>
+        <span style="color: var(--accent-cyan); font-size: 1.5rem;">🆕</span>
       </div>
-      <div class="tab-item" id="tab-webhooks" onclick="switchTab('webhooks')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-        Webhook Dispatch Logs
+
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">In Progress</div>
+          <div class="stat-val" id="statInProgress" style="color: #fcd34d;">0</div>
+        </div>
+        <span style="color: var(--accent-amber); font-size: 1.5rem;">⚡</span>
+      </div>
+
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">Resolved / Closed</div>
+          <div class="stat-val" id="statResolved" style="color: #6ee7b7;">0</div>
+        </div>
+        <span style="color: var(--accent-emerald); font-size: 1.5rem;">✅</span>
       </div>
     </div>
 
-    <!-- BUGS TAB CONTENT -->
+    <!-- TABS NAVIGATION -->
+    <div class="tab-bar">
+      <div class="tabs-group">
+        <button class="tab-btn active" id="tab-bugs" onclick="switchView('bugs')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-6h2zm0-8h-2V7h2z"/></svg>
+          Bugs Explorer
+        </button>
+
+        <button class="tab-btn" id="tab-kanban" onclick="switchView('kanban')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="10" rx="1"/></svg>
+          Kanban Board
+        </button>
+
+        <button class="tab-btn" id="tab-events" onclick="switchView('events')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          Audit Events Log
+        </button>
+
+        <button class="tab-btn" id="tab-webhooks" onclick="switchView('webhooks')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          Webhook Logs
+        </button>
+
+        <button class="tab-btn" id="tab-auth" onclick="switchView('auth')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Role & Auth Matrix
+        </button>
+      </div>
+    </div>
+
+    <!-- VIEW 1: BUGS EXPLORER (GRID) -->
     <div id="view-bugs">
-      <div class="filters-card" style="margin-bottom: 1.5rem;">
-        <div class="filter-group">
+      <!-- FILTERS -->
+      <div class="filters-bar" style="margin-bottom: 1.25rem;">
+        <div class="filter-item">
           <label>Status</label>
-          <select id="filterStatus" class="select-input" onchange="loadBugs()">
+          <select id="filterStatus" class="select-box" onchange="fetchBugs()">
             <option value="">All Statuses</option>
             <option value="new">New</option>
-            <option value="assigned">Assigned</option>
             <option value="in_progress">In Progress</option>
             <option value="resolved">Resolved</option>
             <option value="closed">Closed</option>
           </select>
         </div>
 
-        <div class="filter-group">
+        <div class="filter-item">
           <label>Priority</label>
-          <select id="filterPriority" class="select-input" onchange="loadBugs()">
+          <select id="filterPriority" class="select-box" onchange="fetchBugs()">
             <option value="">All Priorities</option>
             <option value="low">Low</option>
             <option value="medium">Medium</option>
@@ -647,9 +760,9 @@
           </select>
         </div>
 
-        <div class="filter-group">
+        <div class="filter-item">
           <label>Severity</label>
-          <select id="filterSeverity" class="select-input" onchange="loadBugs()">
+          <select id="filterSeverity" class="select-box" onchange="fetchBugs()">
             <option value="">All Severities</option>
             <option value="minor">Minor</option>
             <option value="moderate">Moderate</option>
@@ -659,9 +772,9 @@
           </select>
         </div>
 
-        <div class="filter-group">
+        <div class="filter-item">
           <label>Component</label>
-          <select id="filterComponent" class="select-input" onchange="loadBugs()">
+          <select id="filterComponent" class="select-box" onchange="fetchBugs()">
             <option value="">All Components</option>
             <option value="ui">UI</option>
             <option value="backend">Backend</option>
@@ -671,82 +784,170 @@
           </select>
         </div>
 
-        <div class="filter-group" style="justify-content: flex-end;">
+        <div class="filter-item" style="justify-content: flex-end;">
           <label>&nbsp;</label>
-          <button class="btn btn-secondary" onclick="loadBugs()">Refresh</button>
+          <button class="btn btn-secondary" onclick="fetchBugs()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refresh
+          </button>
         </div>
       </div>
 
-      <div id="bugsContainer" class="bugs-grid">
+      <div id="bugsGrid" class="bugs-container-grid">
         <!-- Bugs loaded dynamically -->
       </div>
     </div>
 
-    <!-- AUDIT EVENTS TAB -->
-    <div id="view-events" style="display: none;">
-      <div class="filters-card" style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
-        <button class="btn btn-secondary" onclick="loadEvents()">Refresh Audit Log</button>
+    <!-- VIEW 2: KANBAN BOARD -->
+    <div id="view-kanban" style="display: none;">
+      <div class="kanban-board">
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <span>New</span>
+            <span id="count-new" class="code-snippet">0</span>
+          </div>
+          <div id="col-new" style="display: flex; flex-direction: column; gap: 0.85rem;"></div>
+        </div>
+
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <span>In Progress</span>
+            <span id="count-in_progress" class="code-snippet">0</span>
+          </div>
+          <div id="col-in_progress" style="display: flex; flex-direction: column; gap: 0.85rem;"></div>
+        </div>
+
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <span>Resolved</span>
+            <span id="count-resolved" class="code-snippet">0</span>
+          </div>
+          <div id="col-resolved" style="display: flex; flex-direction: column; gap: 0.85rem;"></div>
+        </div>
+
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <span>Closed</span>
+            <span id="count-closed" class="code-snippet">0</span>
+          </div>
+          <div id="col-closed" style="display: flex; flex-direction: column; gap: 0.85rem;"></div>
+        </div>
       </div>
-      <table class="log-table">
+    </div>
+
+    <!-- VIEW 3: AUDIT EVENTS LOG -->
+    <div id="view-events" style="display: none;">
+      <div class="filters-bar" style="margin-bottom: 1.25rem;">
+        <button class="btn btn-secondary" onclick="fetchEvents()">Refresh Event Bus</button>
+      </div>
+      <table class="data-table">
         <thead>
           <tr>
             <th>Timestamp</th>
             <th>Event Type</th>
-            <th>Bug ID</th>
+            <th>Target Bug ID</th>
             <th>Processed</th>
-            <th>Payload</th>
+            <th>Payload JSON</th>
           </tr>
         </thead>
-        <tbody id="eventsContainer">
-          <!-- Loaded dynamically -->
-        </tbody>
+        <tbody id="eventsTbody"></tbody>
       </table>
     </div>
 
-    <!-- WEBHOOK LOGS TAB -->
+    <!-- VIEW 4: WEBHOOK LOGS -->
     <div id="view-webhooks" style="display: none;">
-      <div class="filters-card" style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
-        <button class="btn btn-secondary" onclick="loadWebhooks()">Refresh Webhook Logs</button>
+      <div class="filters-bar" style="margin-bottom: 1.25rem;">
+        <button class="btn btn-secondary" onclick="fetchWebhooks()">Refresh Webhook Dispatch Log</button>
       </div>
-      <table class="log-table">
+      <table class="data-table">
         <thead>
           <tr>
             <th>Timestamp</th>
             <th>Destination</th>
             <th>Status</th>
-            <th>Response Code</th>
-            <th>Payload</th>
+            <th>HTTP Response Code</th>
+            <th>Payload Snippet</th>
           </tr>
         </thead>
-        <tbody id="webhooksContainer">
-          <!-- Loaded dynamically -->
-        </tbody>
+        <tbody id="webhooksTbody"></tbody>
       </table>
+    </div>
+
+    <!-- VIEW 5: ROLE & AUTH MATRIX -->
+    <div id="view-auth" style="display: none;">
+      <div class="stat-card" style="flex-direction: column; align-items: flex-start; gap: 1rem;">
+        <h3>Role & Access Control Permission Matrix</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          The API enforces role-based authorization headers (e.g. <span class="code-snippet">Authorization: Bearer test-developer</span>). Below is the matrix of allowed actions:
+        </p>
+
+        <table class="data-table" style="margin-top: 0.5rem;">
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th>Create Bug</th>
+              <th>Edit Title/Description</th>
+              <th>Update Status / Assignee</th>
+              <th>Add Comment</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Developer</strong></td>
+              <td>✅ Yes</td>
+              <td>✅ Yes</td>
+              <td>✅ Yes</td>
+              <td>✅ Yes</td>
+            </tr>
+            <tr>
+              <td><strong>Admin</strong></td>
+              <td>✅ Yes</td>
+              <td>✅ Yes</td>
+              <td>✅ Yes</td>
+              <td>✅ Yes</td>
+            </tr>
+            <tr>
+              <td><strong>Reporter</strong></td>
+              <td>✅ Yes</td>
+              <td>⚠️ Only if bug status is 'new' & reported by self</td>
+              <td>❌ Forbidden</td>
+              <td>✅ Yes</td>
+            </tr>
+            <tr>
+              <td><strong>Tester</strong></td>
+              <td>✅ Yes</td>
+              <td>⚠️ Only if bug status is 'new' & reported by self</td>
+              <td>❌ Forbidden</td>
+              <td>✅ Yes</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </main>
 
-  <!-- Create Bug Modal -->
-  <div class="modal-overlay" id="createBugModal">
-    <div class="modal-content">
-      <div class="modal-header">
+  <!-- CREATE BUG MODAL -->
+  <div class="modal-backdrop" id="createModal">
+    <div class="modal-box">
+      <div class="modal-head">
         <h3>Report New Bug</h3>
-        <button class="close-btn" onclick="closeModal('createBugModal')">&times;</button>
+        <button class="close-icon" onclick="hideModal('createModal')">&times;</button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label>Title *</label>
-          <input type="text" id="newTitle" class="text-input" placeholder="Brief summary of the issue">
+        <div class="form-field">
+          <label>Bug Title *</label>
+          <input type="text" id="createTitle" class="input-box" placeholder="Concise summary of the bug...">
         </div>
 
-        <div class="form-group">
-          <label>Description</label>
-          <textarea id="newDescription" class="text-input" placeholder="Steps to reproduce, expected behavior..."></textarea>
+        <div class="form-field">
+          <label>Detailed Description</label>
+          <textarea id="createDesc" class="input-box" placeholder="Steps to reproduce, environment, error messages..."></textarea>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div class="form-group">
-            <label>Priority</label>
-            <select id="newPriority" class="select-input">
+          <div class="form-field">
+            <label>Priority *</label>
+            <select id="createPriority" class="select-box">
               <option value="low">Low</option>
               <option value="medium" selected>Medium</option>
               <option value="high">High</option>
@@ -754,9 +955,10 @@
             </select>
           </div>
 
-          <div class="form-group">
-            <label>Severity</label>
-            <select id="newSeverity" class="select-input">
+          <div class="form-field">
+            <label>Severity *</label>
+            <select id="createSeverity" class="select-box">
+              <option value="trivial">Trivial</option>
               <option value="minor">Minor</option>
               <option value="moderate" selected>Moderate</option>
               <option value="major">Major</option>
@@ -766,10 +968,10 @@
           </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-field">
           <label>Component *</label>
-          <select id="newComponent" class="select-input">
-            <option value="backend">Backend</option>
+          <select id="createComponent" class="select-box">
+            <option value="backend" selected>Backend</option>
             <option value="ui">UI</option>
             <option value="database">Database</option>
             <option value="auth">Auth</option>
@@ -777,39 +979,40 @@
           </select>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('createBugModal')">Cancel</button>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="hideModal('createModal')">Cancel</button>
         <button class="btn" onclick="submitCreateBug()">Submit Bug</button>
       </div>
     </div>
   </div>
 
-  <!-- Bug Detail / Edit & Comment Drawer Modal -->
-  <div class="modal-overlay" id="detailBugModal">
-    <div class="modal-content" style="max-width: 750px;">
-      <div class="modal-header">
+  <!-- BUG DETAIL & EDIT DRAWER MODAL -->
+  <div class="modal-backdrop" id="detailModal">
+    <div class="modal-box" style="max-width: 720px;">
+      <div class="modal-head">
         <div>
-          <span id="detailBugId" class="bug-id"></span>
-          <h3 id="detailTitle" style="margin-top: 0.25rem;">Bug Details</h3>
+          <span id="detailId" class="bug-card-id"></span>
+          <h3 id="detailHeaderTitle" style="margin-top: 0.2rem;">Bug Details</h3>
         </div>
-        <button class="close-btn" onclick="closeModal('detailBugModal')">&times;</button>
+        <button class="close-icon" onclick="hideModal('detailModal')">&times;</button>
       </div>
+
       <div class="modal-body">
-        <!-- Edit controls -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 10px;">
-          <div class="form-group">
-            <label>Status (Update)</label>
-            <select id="detailStatus" class="select-input">
+        <!-- Status & Priority Controls -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background: rgba(255,255,255,0.025); padding: 1rem; border-radius: 10px; border: 1px solid var(--border-color);">
+          <div class="form-field">
+            <label>Status (Active Role: <span id="activeRoleLabel">DEVELOPER</span>)</label>
+            <select id="detailStatus" class="select-box">
               <option value="new">New</option>
-              <option value="assigned">Assigned</option>
               <option value="in_progress">In Progress</option>
               <option value="resolved">Resolved</option>
               <option value="closed">Closed</option>
             </select>
           </div>
-          <div class="form-group">
+
+          <div class="form-field">
             <label>Priority</label>
-            <select id="detailPriority" class="select-input">
+            <select id="detailPriority" class="select-box">
               <option value="low">Low</option>
               <option value="medium">Medium</option>
               <option value="high">High</option>
@@ -818,215 +1021,229 @@
           </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-field">
           <label>Title</label>
-          <input type="text" id="detailTitleInput" class="text-input">
+          <input type="text" id="detailTitleInput" class="input-box">
         </div>
 
-        <div class="form-group">
+        <div class="form-field">
           <label>Description</label>
-          <textarea id="detailDescription" class="text-input"></textarea>
+          <textarea id="detailDescInput" class="input-box"></textarea>
         </div>
 
         <button class="btn" onclick="submitUpdateBug()" style="align-self: flex-end;">Save Changes</button>
 
-        <!-- Comments Section -->
-        <div class="comments-section">
-          <h4 style="margin-bottom: 0.75rem; font-size: 1rem; color: #fff;">Comments & Discussion</h4>
-          
-          <div id="commentsContainer">
-            <!-- Loaded dynamically -->
-          </div>
+        <!-- COMMENTS SECTION -->
+        <div class="comments-wrapper">
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.75rem;">Comments & Activity</h4>
+          <div id="commentsList"></div>
 
           <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-            <input type="text" id="newCommentInput" class="text-input" style="flex: 1;" placeholder="Add a comment as active role...">
-            <button class="btn btn-secondary" onclick="submitComment()">Post</button>
+            <input type="text" id="commentInput" class="input-box" style="flex: 1;" placeholder="Add a comment as active role...">
+            <button class="btn btn-secondary" onclick="submitComment()">Post Comment</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Toast -->
-  <div id="toast" class="toast">Action completed successfully</div>
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="toast-msg">Action completed</div>
 
   <script>
-    let currentRole = 'developer';
+    let activeRole = 'developer';
     let currentBugId = null;
+    let allBugsCache = [];
 
-    function getApiUrl() {
-      return document.getElementById('apiUrlInput').value.replace(/\/$/, '');
+    function getBaseUrl() {
+      return document.getElementById('apiBaseUrl').value.replace(/\/$/, '');
     }
 
-    function getAuthHeader() {
+    function getHeaders() {
       return {
-        'Authorization': `Bearer test-${currentRole}`,
+        'Authorization': `Bearer test-${activeRole}`,
         'Content-Type': 'application/json'
       };
     }
 
-    function setRole(role) {
-      currentRole = role;
-      document.querySelectorAll('.role-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.role === role);
+    function selectRole(role) {
+      activeRole = role;
+      document.querySelectorAll('.role-chip').forEach(c => {
+        c.classList.toggle('active', c.dataset.role === role);
       });
-      showToast(`Switched active role to: ${role.toUpperCase()}`);
+      document.getElementById('activeRoleLabel').textContent = role.toUpperCase();
+      displayToast(`Active Role set to: ${role.toUpperCase()}`);
     }
 
-    function switchTab(tab) {
-      document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-      document.getElementById(`tab-${tab}`).classList.add('active');
+    function switchView(view) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`tab-${view}`).classList.add('active');
 
-      document.getElementById('view-bugs').style.display = tab === 'bugs' ? 'block' : 'none';
-      document.getElementById('view-events').style.display = tab === 'events' ? 'block' : 'none';
-      document.getElementById('view-webhooks').style.display = tab === 'webhooks' ? 'block' : 'none';
+      ['bugs', 'kanban', 'events', 'webhooks', 'auth'].forEach(v => {
+        document.getElementById(`view-${v}`).style.display = v === view ? 'block' : 'none';
+      });
 
-      if (tab === 'bugs') loadBugs();
-      if (tab === 'events') loadEvents();
-      if (tab === 'webhooks') loadWebhooks();
+      if (view === 'bugs' || view === 'kanban') fetchBugs();
+      if (view === 'events') fetchEvents();
+      if (view === 'webhooks') fetchWebhooks();
     }
 
-    function showToast(msg, isError = false) {
-      const toast = document.getElementById('toast');
-      toast.textContent = msg;
-      toast.style.borderColor = isError ? 'var(--accent-rose)' : 'var(--border-glow)';
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3000);
+    function displayToast(msg, isErr = false) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.borderColor = isErr ? 'var(--accent-rose)' : 'var(--border-glow)';
+      t.classList.add('visible');
+      setTimeout(() => t.classList.remove('visible'), 3200);
     }
 
-    function closeModal(id) {
-      document.getElementById(id).classList.remove('open');
-    }
+    function showModal(id) { document.getElementById(id).classList.add('active'); }
+    function hideModal(id) { document.getElementById(id).classList.remove('active'); }
 
-    function openNewBugModal() {
-      document.getElementById('createBugModal').classList.add('open');
-    }
+    async function fetchBugs() {
+      const st = document.getElementById('filterStatus').value;
+      const pr = document.getElementById('filterPriority').value;
+      const se = document.getElementById('filterSeverity').value;
+      const co = document.getElementById('filterComponent').value;
 
-    async function loadBugs() {
-      const status = document.getElementById('filterStatus').value;
-      const priority = document.getElementById('filterPriority').value;
-      const severity = document.getElementById('filterSeverity').value;
-      const component = document.getElementById('filterComponent').value;
-
-      let query = new URLSearchParams();
-      if (status) query.append('status', status);
-      if (priority) query.append('priority', priority);
-      if (severity) query.append('severity', severity);
-      if (component) query.append('component', component);
+      let q = new URLSearchParams();
+      if (st) q.append('status', st);
+      if (pr) q.append('priority', pr);
+      if (se) q.append('severity', se);
+      if (co) q.append('component', co);
 
       try {
-        const res = await fetch(`${getApiUrl()}/api/v1/bugs?${query.toString()}`, {
-          headers: getAuthHeader()
-        });
+        const res = await fetch(`${getBaseUrl()}/api/v1/bugs?${q.toString()}`, { headers: getHeaders() });
         const envelope = await res.json();
-        
+
         if (envelope.error) {
-          showToast(`Error: ${envelope.error.message}`, true);
+          displayToast(`API Error: ${envelope.error.message}`, true);
           return;
         }
 
-        renderBugs(envelope.data.items || []);
+        allBugsCache = envelope.data.items || [];
+        updateStats(allBugsCache);
+        renderBugsGrid(allBugsCache);
+        renderKanban(allBugsCache);
       } catch (err) {
-        showToast(`Failed to fetch bugs: ${err.message}`, true);
+        displayToast(`Network Error: ${err.message}`, true);
       }
     }
 
-    function renderBugs(bugs) {
-      const container = document.getElementById('bugsContainer');
+    function updateStats(bugs) {
+      document.getElementById('statTotal').textContent = bugs.length;
+      document.getElementById('statNew').textContent = bugs.filter(b => b.status === 'new').length;
+      document.getElementById('statInProgress').textContent = bugs.filter(b => b.status === 'in_progress').length;
+      document.getElementById('statResolved').textContent = bugs.filter(b => b.status === 'resolved' || b.status === 'closed').length;
+    }
+
+    function renderBugsGrid(bugs) {
+      const grid = document.getElementById('bugsGrid');
       if (!bugs.length) {
-        container.innerHTML = `
-          <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: var(--text-muted);">
-            No bugs found. Create one or clear your filters.
-          </div>`;
+        grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:4rem; color:var(--text-muted);">No bugs match current filters.</div>`;
         return;
       }
 
-      container.innerHTML = bugs.map(b => `
-        <div class="bug-card" data-priority="${b.priority}" onclick="openBugDetail('${b.id}')">
-          <div class="bug-header">
-            <div>
-              <span class="bug-id">${b.id.substring(0, 8)}...</span>
-              <h3 class="bug-title">${escapeHtml(b.title)}</h3>
-            </div>
+      grid.innerHTML = bugs.map(b => `
+        <div class="bug-card" data-priority="${b.priority}" onclick="openDetailModal('${b.id}')">
+          <div class="bug-card-head">
+            <span class="bug-card-id">${b.id.substring(0, 8)}</span>
           </div>
-
-          <div class="badges-row">
-            <span class="badge badge-status-${b.status}">${b.status.replace('_', ' ')}</span>
-            <span class="badge badge-comp">${b.component}</span>
-            <span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted);">${b.priority}</span>
+          <h3 class="bug-card-title">${escapeHtml(b.title)}</h3>
+          <div class="tags-row">
+            <span class="tag tag-status-${b.status}">${b.status.replace('_', ' ')}</span>
+            <span class="tag tag-comp">${b.component}</span>
+            <span class="tag tag-sev">${b.severity}</span>
           </div>
-
-          <div class="bug-footer">
-            <div class="user-info">
-              <div class="avatar-sm">${(b.assignee?.name || 'U').charAt(0)}</div>
-              <span>${escapeHtml(b.assignee?.name || 'Unassigned')}</span>
-            </div>
+          <div class="bug-card-foot">
+            <span>👤 ${escapeHtml(b.assignee?.name || 'Unassigned')}</span>
             <span>${new Date(b.created_at).toLocaleDateString()}</span>
           </div>
         </div>
       `).join('');
     }
 
+    function renderKanban(bugs) {
+      ['new', 'in_progress', 'resolved', 'closed'].forEach(st => {
+        const colBugs = bugs.filter(b => b.status === st);
+        document.getElementById(`count-${st}`).textContent = colBugs.length;
+        const container = document.getElementById(`col-${st}`);
+
+        if (!colBugs.length) {
+          container.innerHTML = `<div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding:1rem;">Empty</div>`;
+          return;
+        }
+
+        container.innerHTML = colBugs.map(b => `
+          <div class="bug-card" data-priority="${b.priority}" onclick="openDetailModal('${b.id}')">
+            <span class="bug-card-id">${b.id.substring(0, 8)}</span>
+            <h4 style="font-size:0.9rem; font-weight:600; color:#fff;">${escapeHtml(b.title)}</h4>
+            <div class="tags-row">
+              <span class="tag tag-comp">${b.component}</span>
+              <span class="tag" style="background:rgba(255,255,255,0.05); color:var(--text-muted);">${b.priority}</span>
+            </div>
+          </div>
+        `).join('');
+      });
+    }
+
     async function submitCreateBug() {
-      const title = document.getElementById('newTitle').value;
-      const description = document.getElementById('newDescription').value;
-      const priority = document.getElementById('newPriority').value;
-      const severity = document.getElementById('newSeverity').value;
-      const component = document.getElementById('newComponent').value;
+      const title = document.getElementById('createTitle').value.trim();
+      const description = document.getElementById('createDesc').value.trim();
+      const priority = document.getElementById('createPriority').value;
+      const severity = document.getElementById('createSeverity').value;
+      const component = document.getElementById('createComponent').value;
 
       if (!title) {
-        showToast("Title is required", true);
+        displayToast("Title is required", true);
         return;
       }
 
       try {
-        const res = await fetch(`${getApiUrl()}/api/v1/bugs`, {
+        const res = await fetch(`${getBaseUrl()}/api/v1/bugs`, {
           method: 'POST',
-          headers: getAuthHeader(),
+          headers: getHeaders(),
           body: JSON.stringify({ title, description, priority, severity, component })
         });
         const envelope = await res.json();
 
         if (envelope.error) {
-          showToast(`Creation failed: ${envelope.error.message}`, true);
+          displayToast(`Creation Failed: ${envelope.error.message}`, true);
           return;
         }
 
-        showToast("Bug reported successfully!");
-        closeModal('createBugModal');
-        document.getElementById('newTitle').value = '';
-        document.getElementById('newDescription').value = '';
-        loadBugs();
+        displayToast("Bug reported successfully!");
+        hideModal('createModal');
+        document.getElementById('createTitle').value = '';
+        document.getElementById('createDesc').value = '';
+        fetchBugs();
       } catch (err) {
-        showToast(`Failed to create bug: ${err.message}`, true);
+        displayToast(`Error: ${err.message}`, true);
       }
     }
 
-    async function openBugDetail(id) {
+    async function openDetailModal(id) {
       currentBugId = id;
       try {
-        const res = await fetch(`${getApiUrl()}/api/v1/bugs/${id}`, {
-          headers: getAuthHeader()
-        });
+        const res = await fetch(`${getBaseUrl()}/api/v1/bugs/${id}`, { headers: getHeaders() });
         const envelope = await res.json();
 
         if (envelope.error) {
-          showToast(`Error: ${envelope.error.message}`, true);
+          displayToast(`Error: ${envelope.error.message}`, true);
           return;
         }
 
         const bug = envelope.data;
-        document.getElementById('detailBugId').textContent = bug.id;
-        document.getElementById('detailTitle').textContent = bug.title;
+        document.getElementById('detailId').textContent = bug.id;
+        document.getElementById('detailHeaderTitle').textContent = bug.title;
         document.getElementById('detailTitleInput').value = bug.title;
-        document.getElementById('detailDescription').value = bug.description || '';
+        document.getElementById('detailDescInput').value = bug.description || '';
         document.getElementById('detailStatus').value = bug.status;
         document.getElementById('detailPriority').value = bug.priority;
 
-        document.getElementById('detailBugModal').classList.add('open');
-        loadComments(id);
+        showModal('detailModal');
+        fetchComments(id);
       } catch (err) {
-        showToast(`Failed to fetch bug details: ${err.message}`, true);
+        displayToast(`Error loading bug: ${err.message}`, true);
       }
     }
 
@@ -1034,133 +1251,131 @@
       if (!currentBugId) return;
 
       const title = document.getElementById('detailTitleInput').value;
-      const description = document.getElementById('detailDescription').value;
+      const description = document.getElementById('detailDescInput').value;
       const status = document.getElementById('detailStatus').value;
       const priority = document.getElementById('detailPriority').value;
 
       try {
-        const res = await fetch(`${getApiUrl()}/api/v1/bugs/${currentBugId}`, {
+        const res = await fetch(`${getBaseUrl()}/api/v1/bugs/${currentBugId}`, {
           method: 'PATCH',
-          headers: getAuthHeader(),
+          headers: getHeaders(),
           body: JSON.stringify({ title, description, status, priority })
         });
         const envelope = await res.json();
 
         if (envelope.error) {
-          showToast(`Update failed: ${envelope.error.message}`, true);
+          displayToast(`Update Failed: ${envelope.error.message}`, true);
           return;
         }
 
-        showToast("Bug updated successfully!");
-        loadBugs();
+        displayToast("Bug updated!");
+        fetchBugs();
       } catch (err) {
-        showToast(`Update failed: ${err.message}`, true);
+        displayToast(`Update Error: ${err.message}`, true);
       }
     }
 
-    async function loadComments(bugId) {
+    async function fetchComments(bugId) {
       try {
-        const res = await fetch(`${getApiUrl()}/api/v1/bugs/${bugId}/comments`, {
-          headers: getAuthHeader()
-        });
+        const res = await fetch(`${getBaseUrl()}/api/v1/bugs/${bugId}/comments`, { headers: getHeaders() });
         const envelope = await res.json();
         const comments = envelope.data || [];
 
-        const container = document.getElementById('commentsContainer');
+        const list = document.getElementById('commentsList');
         if (!comments.length) {
-          container.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-muted);">No comments yet.</p>`;
+          list.innerHTML = `<p style="font-size:0.8rem; color:var(--text-muted);">No comments yet.</p>`;
           return;
         }
 
-        container.innerHTML = comments.map(c => `
-          <div class="comment-item">
-            <div class="comment-header">
+        list.innerHTML = comments.map(c => `
+          <div class="comment-card">
+            <div class="comment-meta">
               <strong>${escapeHtml(c.user?.name || 'User')}</strong>
               <span>${new Date(c.created_at).toLocaleTimeString()}</span>
             </div>
-            <div class="comment-body">${escapeHtml(c.body)}</div>
+            <div style="font-size:0.875rem; color:var(--text-main);">${escapeHtml(c.body)}</div>
           </div>
         `).join('');
       } catch (err) {
-        console.error('Comments fetch error:', err);
+        console.error(err);
       }
     }
 
     async function submitComment() {
-      const input = document.getElementById('newCommentInput');
+      const input = document.getElementById('commentInput');
       const body = input.value.trim();
       if (!body || !currentBugId) return;
 
       try {
-        const res = await fetch(`${getApiUrl()}/api/v1/bugs/${currentBugId}/comments`, {
+        const res = await fetch(`${getBaseUrl()}/api/v1/bugs/${currentBugId}/comments`, {
           method: 'POST',
-          headers: getAuthHeader(),
+          headers: getHeaders(),
           body: JSON.stringify({ body })
         });
         const envelope = await res.json();
 
         if (envelope.error) {
-          showToast(`Comment failed: ${envelope.error.message}`, true);
+          displayToast(`Comment Error: ${envelope.error.message}`, true);
           return;
         }
 
         input.value = '';
-        loadComments(currentBugId);
-        showToast("Comment added!");
+        fetchComments(currentBugId);
+        displayToast("Comment posted!");
       } catch (err) {
-        showToast(`Comment failed: ${err.message}`, true);
+        displayToast(`Error: ${err.message}`, true);
       }
     }
 
-    async function loadEvents() {
+    async function fetchEvents() {
       try {
-        const res = await fetch(`${getApiUrl()}/api/v1/events`, { headers: getAuthHeader() });
+        const res = await fetch(`${getBaseUrl()}/api/v1/events`, { headers: getHeaders() });
         const envelope = await res.json();
         const items = envelope.data?.items || [];
-        const container = document.getElementById('eventsContainer');
+        const tbody = document.getElementById('eventsTbody');
 
         if (!items.length) {
-          container.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No audit events recorded yet.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No events found.</td></tr>`;
           return;
         }
 
-        container.innerHTML = items.map(e => `
+        tbody.innerHTML = items.map(e => `
           <tr>
             <td>${new Date(e.created_at || Date.now()).toLocaleString()}</td>
-            <td><strong style="color: var(--accent-cyan);">${e.event_type}</strong></td>
-            <td style="font-family: monospace;">${(e.bug_id || '-').substring(0, 8)}</td>
-            <td>${e.processed ? '✅' : '⏳'}</td>
-            <td style="font-family: monospace; font-size: 0.75rem;">${JSON.stringify(e.payload)}</td>
+            <td><span class="code-snippet">${e.event_type}</span></td>
+            <td style="font-family:monospace;">${(e.bug_id || '-').substring(0,8)}</td>
+            <td>${e.processed ? '✅ Yes' : '⏳ Pending'}</td>
+            <td style="font-family:monospace; font-size:0.75rem;">${JSON.stringify(e.payload)}</td>
           </tr>
         `).join('');
       } catch (err) {
-        showToast(`Failed to load events: ${err.message}`, true);
+        displayToast(`Error: ${err.message}`, true);
       }
     }
 
-    async function loadWebhooks() {
+    async function fetchWebhooks() {
       try {
-        const res = await fetch(`${getApiUrl()}/api/v1/webhook-logs`, { headers: getAuthHeader() });
+        const res = await fetch(`${getBaseUrl()}/api/v1/webhook-logs`, { headers: getHeaders() });
         const envelope = await res.json();
         const items = envelope.data?.items || [];
-        const container = document.getElementById('webhooksContainer');
+        const tbody = document.getElementById('webhooksTbody');
 
         if (!items.length) {
-          container.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">No webhook logs recorded yet.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No webhook logs.</td></tr>`;
           return;
         }
 
-        container.innerHTML = items.map(w => `
+        tbody.innerHTML = items.map(w => `
           <tr>
             <td>${new Date(w.created_at || Date.now()).toLocaleString()}</td>
             <td><strong>${w.destination}</strong></td>
-            <td>${w.success ? '🟢 Success' : '🔴 Failed'}</td>
-            <td>${w.response_code || '-'}</td>
-            <td style="font-family: monospace; font-size: 0.75rem;">${JSON.stringify(w.payload)}</td>
+            <td>${w.success ? '🟢 Delivered' : '🔴 Failed'}</td>
+            <td><span class="code-snippet">${w.response_code || '-'}</span></td>
+            <td style="font-family:monospace; font-size:0.75rem;">${JSON.stringify(w.payload)}</td>
           </tr>
         `).join('');
       } catch (err) {
-        showToast(`Failed to load webhooks: ${err.message}`, true);
+        displayToast(`Error: ${err.message}`, true);
       }
     }
 
@@ -1168,10 +1383,7 @@
       return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    // Initial load
-    window.addEventListener('DOMContentLoaded', () => {
-      loadBugs();
-    });
+    window.addEventListener('DOMContentLoaded', fetchBugs);
   </script>
 </body>
 </html>

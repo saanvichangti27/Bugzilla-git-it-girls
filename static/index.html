@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bugzilla Modernization Platform - Unified Testing Hub</title>
+  <title>Bugzilla Modernization Platform - Unified Hub (Person A + B + C)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -107,7 +107,7 @@
       gap: 1.25rem;
     }
 
-    /* ROLE SWITCHER */
+    /* ROLE SWITCHER & AUTH BUTTONS */
     .role-badge-box {
       display: flex;
       align-items: center;
@@ -139,12 +139,6 @@
       box-shadow: 0 2px 10px rgba(99, 102, 241, 0.45);
     }
 
-    .api-endpoint-box {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
     .api-input {
       background: var(--bg-input);
       border: 1px solid var(--border-color);
@@ -153,7 +147,7 @@
       border-radius: 8px;
       font-size: 0.82rem;
       font-family: 'JetBrains Mono', monospace;
-      width: 210px;
+      width: 190px;
     }
 
     /* BUTTONS */
@@ -252,6 +246,7 @@
     .tabs-group {
       display: flex;
       gap: 0.75rem;
+      flex-wrap: wrap;
     }
 
     .tab-btn {
@@ -323,7 +318,7 @@
       border-color: var(--accent-primary);
     }
 
-    /* VIEW MODES (GRID & KANBAN) */
+    /* BUGS GRID & KANBAN */
     .bugs-container-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
@@ -643,22 +638,23 @@
       </div>
       <div class="brand-text">
         <h1>Bugzilla Modernization Platform</h1>
-        <span>Full Feature Testing Console</span>
+        <span>Unified Hub (Person A + B + C)</span>
       </div>
     </div>
 
     <div class="header-actions">
       <!-- Active Role Sandbox -->
       <div class="role-badge-box">
-        <button class="role-chip active" data-role="developer" onclick="selectRole('developer')">Developer</button>
+        <button class="role-chip active" data-role="developer" onclick="selectRole('developer')">Dev</button>
         <button class="role-chip" data-role="reporter" onclick="selectRole('reporter')">Reporter</button>
         <button class="role-chip" data-role="admin" onclick="selectRole('admin')">Admin</button>
         <button class="role-chip" data-role="tester" onclick="selectRole('tester')">Tester</button>
       </div>
 
-      <div class="api-endpoint-box">
-        <input type="text" id="apiBaseUrl" class="api-input" value="http://localhost:8000" placeholder="API Server Base URL">
-      </div>
+      <!-- Auth Controls -->
+      <button class="btn btn-secondary btn-sm" onclick="showModal('authModal')">🔐 Login / Register</button>
+
+      <input type="text" id="apiBaseUrl" class="api-input" value="http://localhost:8000" placeholder="API Base URL">
 
       <button class="btn" onclick="showModal('createModal')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -709,7 +705,7 @@
       <div class="tabs-group">
         <button class="tab-btn active" id="tab-bugs" onclick="switchView('bugs')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-6h2zm0-8h-2V7h2z"/></svg>
-          Bugs Explorer
+          Bugs Directory
         </button>
 
         <button class="tab-btn" id="tab-kanban" onclick="switchView('kanban')">
@@ -717,26 +713,30 @@
           Kanban Board
         </button>
 
+        <button class="tab-btn" id="tab-dashboard" onclick="switchView('dashboard')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+          Analytics Summary (Person B)
+        </button>
+
+        <button class="tab-btn" id="tab-users" onclick="switchView('users')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Users & Role Admin (Person B)
+        </button>
+
         <button class="tab-btn" id="tab-events" onclick="switchView('events')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-          Audit Events Log
+          Audit Events
         </button>
 
         <button class="tab-btn" id="tab-webhooks" onclick="switchView('webhooks')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
           Webhook Logs
         </button>
-
-        <button class="tab-btn" id="tab-auth" onclick="switchView('auth')">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Role & Auth Matrix
-        </button>
       </div>
     </div>
 
     <!-- VIEW 1: BUGS EXPLORER (GRID) -->
     <div id="view-bugs">
-      <!-- FILTERS -->
       <div class="filters-bar" style="margin-bottom: 1.25rem;">
         <div class="filter-item">
           <label>Status</label>
@@ -786,56 +786,86 @@
 
         <div class="filter-item" style="justify-content: flex-end;">
           <label>&nbsp;</label>
-          <button class="btn btn-secondary" onclick="fetchBugs()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            Refresh
-          </button>
+          <button class="btn btn-secondary" onclick="fetchBugs()">Refresh</button>
         </div>
       </div>
 
-      <div id="bugsGrid" class="bugs-container-grid">
-        <!-- Bugs loaded dynamically -->
-      </div>
+      <div id="bugsGrid" class="bugs-container-grid"></div>
     </div>
 
     <!-- VIEW 2: KANBAN BOARD -->
     <div id="view-kanban" style="display: none;">
       <div class="kanban-board">
         <div class="kanban-col">
-          <div class="kanban-col-header">
-            <span>New</span>
-            <span id="count-new" class="code-snippet">0</span>
-          </div>
+          <div class="kanban-col-header"><span>New</span><span id="count-new" class="code-snippet">0</span></div>
           <div id="col-new" style="display: flex; flex-direction: column; gap: 0.85rem;"></div>
         </div>
 
         <div class="kanban-col">
-          <div class="kanban-col-header">
-            <span>In Progress</span>
-            <span id="count-in_progress" class="code-snippet">0</span>
-          </div>
+          <div class="kanban-col-header"><span>In Progress</span><span id="count-in_progress" class="code-snippet">0</span></div>
           <div id="col-in_progress" style="display: flex; flex-direction: column; gap: 0.85rem;"></div>
         </div>
 
         <div class="kanban-col">
-          <div class="kanban-col-header">
-            <span>Resolved</span>
-            <span id="count-resolved" class="code-snippet">0</span>
-          </div>
+          <div class="kanban-col-header"><span>Resolved</span><span id="count-resolved" class="code-snippet">0</span></div>
           <div id="col-resolved" style="display: flex; flex-direction: column; gap: 0.85rem;"></div>
         </div>
 
         <div class="kanban-col">
-          <div class="kanban-col-header">
-            <span>Closed</span>
-            <span id="count-closed" class="code-snippet">0</span>
-          </div>
+          <div class="kanban-col-header"><span>Closed</span><span id="count-closed" class="code-snippet">0</span></div>
           <div id="col-closed" style="display: flex; flex-direction: column; gap: 0.85rem;"></div>
         </div>
       </div>
     </div>
 
-    <!-- VIEW 3: AUDIT EVENTS LOG -->
+    <!-- VIEW 3: PERSON B ANALYTICS DASHBOARD -->
+    <div id="view-dashboard" style="display: none;">
+      <div class="filters-bar" style="margin-bottom: 1.25rem;">
+        <button class="btn btn-secondary" onclick="fetchDashboardSummary()">Refresh Dashboard Analytics</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;">
+        <div class="stat-card" style="flex-direction: column; align-items: flex-start;">
+          <div class="stat-label">Total System Bugs</div>
+          <div class="stat-val" id="dashTotalBugs">0</div>
+        </div>
+        <div class="stat-card" style="flex-direction: column; align-items: flex-start;">
+          <div class="stat-label">Open Bugs</div>
+          <div class="stat-val" id="dashOpenBugs" style="color: #a5b4fc;">0</div>
+        </div>
+        <div class="stat-card" style="flex-direction: column; align-items: flex-start;">
+          <div class="stat-label">Critical / Blocker Severity</div>
+          <div class="stat-val" id="dashCriticalBugs" style="color: var(--accent-rose);">0</div>
+        </div>
+        <div class="stat-card" style="flex-direction: column; align-items: flex-start;">
+          <div class="stat-label">Bugs Assigned to Me</div>
+          <div class="stat-val" id="dashMyBugs" style="color: var(--accent-emerald);">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 4: PERSON B USERS & ROLE MANAGEMENT -->
+    <div id="view-users" style="display: none;">
+      <div class="filters-bar" style="margin-bottom: 1.25rem; display: flex; gap: 1rem;">
+        <input type="text" id="userSearchInput" class="input-box" placeholder="Search users by name or email..." style="flex: 1;" onkeyup="fetchUsers()">
+        <button class="btn btn-secondary" onclick="fetchUsers()">Search</button>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Current Role</th>
+            <th>Admin Action</th>
+          </tr>
+        </thead>
+        <tbody id="usersTbody"></tbody>
+      </table>
+    </div>
+
+    <!-- VIEW 5: AUDIT EVENTS LOG -->
     <div id="view-events" style="display: none;">
       <div class="filters-bar" style="margin-bottom: 1.25rem;">
         <button class="btn btn-secondary" onclick="fetchEvents()">Refresh Event Bus</button>
@@ -854,10 +884,10 @@
       </table>
     </div>
 
-    <!-- VIEW 4: WEBHOOK LOGS -->
+    <!-- VIEW 6: WEBHOOK LOGS -->
     <div id="view-webhooks" style="display: none;">
       <div class="filters-bar" style="margin-bottom: 1.25rem;">
-        <button class="btn btn-secondary" onclick="fetchWebhooks()">Refresh Webhook Dispatch Log</button>
+        <button class="btn btn-secondary" onclick="fetchWebhooks()">Refresh Webhook Log</button>
       </div>
       <table class="data-table">
         <thead>
@@ -872,59 +902,42 @@
         <tbody id="webhooksTbody"></tbody>
       </table>
     </div>
+  </main>
 
-    <!-- VIEW 5: ROLE & AUTH MATRIX -->
-    <div id="view-auth" style="display: none;">
-      <div class="stat-card" style="flex-direction: column; align-items: flex-start; gap: 1rem;">
-        <h3>Role & Access Control Permission Matrix</h3>
-        <p style="color: var(--text-muted); font-size: 0.9rem;">
-          The API enforces role-based authorization headers (e.g. <span class="code-snippet">Authorization: Bearer test-developer</span>). Below is the matrix of allowed actions:
-        </p>
+  <!-- AUTH MODAL (SIGNUP / LOGIN) -->
+  <div class="modal-backdrop" id="authModal">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-head">
+        <h3 id="authModalTitle">Account Authentication</h3>
+        <button class="close-icon" onclick="hideModal('authModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+          <button id="authTabLogin" class="btn btn-secondary btn-sm" style="flex: 1;" onclick="toggleAuthMode('login')">Login</button>
+          <button id="authTabSignup" class="btn btn-secondary btn-sm" style="flex: 1;" onclick="toggleAuthMode('signup')">Sign Up</button>
+        </div>
 
-        <table class="data-table" style="margin-top: 0.5rem;">
-          <thead>
-            <tr>
-              <th>Role</th>
-              <th>Create Bug</th>
-              <th>Edit Title/Description</th>
-              <th>Update Status / Assignee</th>
-              <th>Add Comment</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Developer</strong></td>
-              <td>✅ Yes</td>
-              <td>✅ Yes</td>
-              <td>✅ Yes</td>
-              <td>✅ Yes</td>
-            </tr>
-            <tr>
-              <td><strong>Admin</strong></td>
-              <td>✅ Yes</td>
-              <td>✅ Yes</td>
-              <td>✅ Yes</td>
-              <td>✅ Yes</td>
-            </tr>
-            <tr>
-              <td><strong>Reporter</strong></td>
-              <td>✅ Yes</td>
-              <td>⚠️ Only if bug status is 'new' & reported by self</td>
-              <td>❌ Forbidden</td>
-              <td>✅ Yes</td>
-            </tr>
-            <tr>
-              <td><strong>Tester</strong></td>
-              <td>✅ Yes</td>
-              <td>⚠️ Only if bug status is 'new' & reported by self</td>
-              <td>❌ Forbidden</td>
-              <td>✅ Yes</td>
-            </tr>
-          </tbody>
-        </table>
+        <div id="signupNameGroup" class="form-field" style="display: none;">
+          <label>Full Name</label>
+          <input type="text" id="authName" class="input-box" placeholder="Asha Rao">
+        </div>
+
+        <div class="form-field">
+          <label>Email Address</label>
+          <input type="email" id="authEmail" class="input-box" placeholder="user@example.com">
+        </div>
+
+        <div class="form-field">
+          <label>Password</label>
+          <input type="password" id="authPassword" class="input-box" placeholder="••••••••">
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="hideModal('authModal')">Cancel</button>
+        <button class="btn" id="authSubmitBtn" onclick="submitAuth()">Submit</button>
       </div>
     </div>
-  </main>
+  </div>
 
   <!-- CREATE BUG MODAL -->
   <div class="modal-backdrop" id="createModal">
@@ -941,7 +954,7 @@
 
         <div class="form-field">
           <label>Detailed Description</label>
-          <textarea id="createDesc" class="input-box" placeholder="Steps to reproduce, environment, error messages..."></textarea>
+          <textarea id="createDesc" class="input-box" placeholder="Steps to reproduce..."></textarea>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -998,7 +1011,6 @@
       </div>
 
       <div class="modal-body">
-        <!-- Status & Priority Controls -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background: rgba(255,255,255,0.025); padding: 1rem; border-radius: 10px; border: 1px solid var(--border-color);">
           <div class="form-field">
             <label>Status (Active Role: <span id="activeRoleLabel">DEVELOPER</span>)</label>
@@ -1052,38 +1064,45 @@
 
   <script>
     let activeRole = 'developer';
+    let authMode = 'login';
+    let authToken = null;
     let currentBugId = null;
-    let allBugsCache = [];
 
     function getBaseUrl() {
       return document.getElementById('apiBaseUrl').value.replace(/\/$/, '');
     }
 
     function getHeaders() {
+      const auth = authToken ? `Bearer ${authToken}` : `Bearer test-${activeRole}`;
       return {
-        'Authorization': `Bearer test-${activeRole}`,
+        'Authorization': auth,
         'Content-Type': 'application/json'
       };
     }
 
     function selectRole(role) {
       activeRole = role;
+      authToken = null;
       document.querySelectorAll('.role-chip').forEach(c => {
         c.classList.toggle('active', c.dataset.role === role);
       });
       document.getElementById('activeRoleLabel').textContent = role.toUpperCase();
-      displayToast(`Active Role set to: ${role.toUpperCase()}`);
+      displayToast(`Switched Test Role to: ${role.toUpperCase()}`);
     }
 
     function switchView(view) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById(`tab-${view}`).classList.add('active');
+      const activeBtn = document.getElementById(`tab-${view}`);
+      if (activeBtn) activeBtn.classList.add('active');
 
-      ['bugs', 'kanban', 'events', 'webhooks', 'auth'].forEach(v => {
-        document.getElementById(`view-${v}`).style.display = v === view ? 'block' : 'none';
+      ['bugs', 'kanban', 'dashboard', 'users', 'events', 'webhooks'].forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) el.style.display = v === view ? 'block' : 'none';
       });
 
       if (view === 'bugs' || view === 'kanban') fetchBugs();
+      if (view === 'dashboard') fetchDashboardSummary();
+      if (view === 'users') fetchUsers();
       if (view === 'events') fetchEvents();
       if (view === 'webhooks') fetchWebhooks();
     }
@@ -1098,6 +1117,41 @@
 
     function showModal(id) { document.getElementById(id).classList.add('active'); }
     function hideModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    function toggleAuthMode(mode) {
+      authMode = mode;
+      document.getElementById('signupNameGroup').style.display = mode === 'signup' ? 'flex' : 'none';
+      document.getElementById('authSubmitBtn').textContent = mode === 'signup' ? 'Sign Up' : 'Log In';
+    }
+
+    async function submitAuth() {
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value.trim();
+      const name = document.getElementById('authName').value.trim();
+
+      const url = `${getBaseUrl()}/api/v1/auth/${authMode}`;
+      const payload = authMode === 'signup' ? { email, password, name } : { email, password };
+
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const env = await res.json();
+
+        if (env.error) {
+          displayToast(`Auth Failed: ${env.error.message}`, true);
+          return;
+        }
+
+        authToken = env.data.token;
+        displayToast(`Authenticated as: ${env.data.user.email} (${env.data.user.role})`);
+        hideModal('authModal');
+      } catch (err) {
+        displayToast(`Auth Error: ${err.message}`, true);
+      }
+    }
 
     async function fetchBugs() {
       const st = document.getElementById('filterStatus').value;
@@ -1120,10 +1174,10 @@
           return;
         }
 
-        allBugsCache = envelope.data.items || [];
-        updateStats(allBugsCache);
-        renderBugsGrid(allBugsCache);
-        renderKanban(allBugsCache);
+        const bugs = envelope.data.items || [];
+        updateStats(bugs);
+        renderBugsGrid(bugs);
+        renderKanban(bugs);
       } catch (err) {
         displayToast(`Network Error: ${err.message}`, true);
       }
@@ -1139,7 +1193,7 @@
     function renderBugsGrid(bugs) {
       const grid = document.getElementById('bugsGrid');
       if (!bugs.length) {
-        grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:4rem; color:var(--text-muted);">No bugs match current filters.</div>`;
+        grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:4rem; color:var(--text-muted);">No bugs found.</div>`;
         return;
       }
 
@@ -1165,8 +1219,11 @@
     function renderKanban(bugs) {
       ['new', 'in_progress', 'resolved', 'closed'].forEach(st => {
         const colBugs = bugs.filter(b => b.status === st);
-        document.getElementById(`count-${st}`).textContent = colBugs.length;
+        const countEl = document.getElementById(`count-${st}`);
+        if (countEl) countEl.textContent = colBugs.length;
         const container = document.getElementById(`col-${st}`);
+
+        if (!container) return;
 
         if (!colBugs.length) {
           container.innerHTML = `<div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding:1rem;">Empty</div>`;
@@ -1211,7 +1268,7 @@
           return;
         }
 
-        displayToast("Bug reported successfully!");
+        displayToast("Bug reported & saved!");
         hideModal('createModal');
         document.getElementById('createTitle').value = '';
         document.getElementById('createDesc').value = '';
@@ -1268,7 +1325,7 @@
           return;
         }
 
-        displayToast("Bug updated!");
+        displayToast("Bug updated successfully!");
         fetchBugs();
       } catch (err) {
         displayToast(`Update Error: ${err.message}`, true);
@@ -1327,6 +1384,80 @@
       }
     }
 
+    async function fetchDashboardSummary() {
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/v1/dashboard/summary`, { headers: getHeaders() });
+        const envelope = await res.json();
+        if (envelope.error) return;
+
+        const data = envelope.data;
+        document.getElementById('dashTotalBugs').textContent = data.total_bugs || 0;
+        document.getElementById('dashOpenBugs').textContent = data.open_bugs || 0;
+        document.getElementById('dashCriticalBugs').textContent = data.critical_bugs || 0;
+        document.getElementById('dashMyBugs').textContent = data.my_assigned_bugs || 0;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function fetchUsers() {
+      const search = document.getElementById('userSearchInput').value.trim();
+      const query = search ? `?search=${encodeURIComponent(search)}` : '';
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/v1/users${query}`, { headers: getHeaders() });
+        const envelope = await res.json();
+        const users = envelope.data || [];
+        const tbody = document.getElementById('usersTbody');
+
+        if (!users.length) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No users found.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = users.map(u => `
+          <tr>
+            <td style="font-family:monospace; font-size:0.75rem;">${u.id.substring(0,8)}</td>
+            <td><strong>${escapeHtml(u.name)}</strong></td>
+            <td>${escapeHtml(u.email)}</td>
+            <td><span class="code-snippet">${u.role}</span></td>
+            <td>
+              <select onchange="updateUserRole('${u.id}', this.value)" class="select-box" style="padding:0.25rem 0.5rem; font-size:0.75rem;">
+                <option value="">Change Role...</option>
+                <option value="developer">Developer</option>
+                <option value="reporter">Reporter</option>
+                <option value="admin">Admin</option>
+                <option value="tester">Tester</option>
+              </select>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        displayToast(`Error loading users: ${err.message}`, true);
+      }
+    }
+
+    async function updateUserRole(userId, newRole) {
+      if (!newRole) return;
+      try {
+        const res = await fetch(`${getBaseUrl()}/api/v1/users/${userId}/role`, {
+          method: 'PATCH',
+          headers: getHeaders(),
+          body: JSON.stringify({ role: newRole })
+        });
+        const envelope = await res.json();
+
+        if (envelope.error) {
+          displayToast(`Role Change Failed: ${envelope.error.message}`, true);
+          return;
+        }
+
+        displayToast(`User role updated to ${newRole}!`);
+        fetchUsers();
+      } catch (err) {
+        displayToast(`Error: ${err.message}`, true);
+      }
+    }
+
     async function fetchEvents() {
       try {
         const res = await fetch(`${getBaseUrl()}/api/v1/events`, { headers: getHeaders() });
@@ -1335,7 +1466,7 @@
         const tbody = document.getElementById('eventsTbody');
 
         if (!items.length) {
-          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No events found.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No events logged yet.</td></tr>`;
           return;
         }
 
@@ -1361,7 +1492,7 @@
         const tbody = document.getElementById('webhooksTbody');
 
         if (!items.length) {
-          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No webhook logs.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No webhooks dispatched.</td></tr>`;
           return;
         }
 

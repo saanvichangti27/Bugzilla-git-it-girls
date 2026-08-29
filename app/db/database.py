@@ -84,6 +84,14 @@ class Database:
             "created_at": now.isoformat()
         }
 
+def _ensure_uuid(val: Optional[str]) -> Optional[str]:
+    if not val:
+        return None
+    try:
+        return str(uuid.UUID(val))
+    except ValueError:
+        return str(uuid.uuid5(uuid.NAMESPACE_DNS, str(val)))
+
     # --- BUG METHODS ---
     def create_bug(self, bug_data: dict, reporter: UserSummary) -> dict:
         bug_id = str(uuid.uuid4())
@@ -97,9 +105,9 @@ class Database:
             "priority": bug_data["priority"],
             "severity": bug_data["severity"],
             "component": bug_data["component"],
-            "assignee_id": bug_data.get("assignee_id"),
+            "assignee_id": _ensure_uuid(bug_data.get("assignee_id")),
             "assignee_name": bug_data.get("assignee_name"),
-            "reporter_id": reporter.id,
+            "reporter_id": _ensure_uuid(reporter.id),
             "reporter_name": reporter.name,
             "created_at": now,
             "updated_at": now,
@@ -108,6 +116,7 @@ class Database:
             "ai_summary": None,
             "ai_summary_generated_at": None,
         }
+
 
         if self.use_supabase:
             try:
@@ -237,9 +246,9 @@ class Database:
         now = datetime.now(timezone.utc).isoformat()
         doc = {
             "id": comment_id,
-            "bug_id": bug_id,
+            "bug_id": _ensure_uuid(bug_id),
             "body": body,
-            "user_id": user.id,
+            "user_id": _ensure_uuid(user.id),
             "user_name": user.name,
             "created_at": now
         }

@@ -10,18 +10,26 @@ class UserPayload(BaseModel):
     email: str
     role: str
 
+ROLE_TEST_IDS = {
+    "developer": "11111111-1111-1111-1111-111111111101",
+    "reporter": "11111111-1111-1111-1111-111111111102",
+    "admin": "11111111-1111-1111-1111-111111111103",
+    "tester": "11111111-1111-1111-1111-111111111104",
+}
+
 def decode_token(token: str) -> UserPayload:
     # 1. Dev / Test shortcut token handling
     if token.startswith("test-") or token.startswith("dev-"):
         parts = token.split("-")
         role = parts[1] if len(parts) > 1 else "reporter"
-        user_id = f"user-{role}-id"
+        user_id = ROLE_TEST_IDS.get(role.lower(), "11111111-1111-1111-1111-111111111100")
         return UserPayload(
             id=user_id,
             name=f"Test {role.capitalize()} User",
             email=f"{role}@example.com",
             role=role.lower()
         )
+
 
     # 2. Real Supabase JWT decoding
     try:

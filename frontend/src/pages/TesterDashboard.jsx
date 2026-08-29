@@ -11,12 +11,14 @@ export default function TesterDashboard() {
   
   // New bug state
   const [showNewBugForm, setShowNewBugForm] = useState(false);
-  const [newBug, setNewBug] = useState({ title: '', description: '', priority: 'medium', severity: 'minor', component: 'ui' });
+  const [newBug, setNewBug] = useState({ title: '', description: '', priority: 'medium', severity: 'minor', component: 'frontend' });
 
+  const [selectedComponent, setSelectedComponent] = useState('all');
+  const componentsList = ["frontend", "backend", "database", "others"];
   const fetchData = async () => {
     try {
       const [assignedRes, reportedRes, usersRes] = await Promise.all([
-        api.get(`/bugs?assignee_id=${user.id}&sort=-created_at`),
+        api.get(`/bugs?status=ready_for_testing&sort=-created_at`),
         api.get(`/bugs?reporter_id=${user.id}&sort=-created_at`),
         api.get('/users')
       ]);
@@ -46,22 +48,21 @@ export default function TesterDashboard() {
     }
   };
 
-  const handleMarkFixed = async (bugId) => {
+  const handleFixed = async (bugId) => {
     try {
-      await api.patch(`/bugs/${bugId}`, { status: 'resolved' });
+      await api.patch(`/bugs/${bugId}`, { status: 'closed' });
       fetchData();
     } catch (err) {
       alert(err.response?.data?.error?.message || "Failed to mark as fixed");
     }
   };
 
-  const handleReassign = async (bugId, devId) => {
-    if (!devId) return;
+  const handleNotFixed = async (bugId) => {
     try {
-      await api.patch(`/bugs/${bugId}`, { assignee_id: devId });
+      await api.patch(`/bugs/${bugId}`, { status: 'new' });
       fetchData();
     } catch (err) {
-      alert(err.response?.data?.error?.message || "Failed to reassign");
+      alert(err.response?.data?.error?.message || "Failed to mark as not fixed");
     }
   };
 
@@ -117,18 +118,29 @@ export default function TesterDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         {/* Bugs to Test */}
         <div className="glass-panel" style={{ padding: '1.5rem' }}>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 1rem 0' }}>
-            <CheckCircle size={20} color="var(--primary)" /> Bugs to Test
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+              <CheckCircle size={20} color="var(--primary)" /> Bugs to Test
+            </h3>
+            <select 
+              className="input-field" 
+              style={{ width: 'auto', padding: '0.3rem 0.75rem' }}
+              value={selectedComponent}
+              onChange={(e) => setSelectedComponent(e.target.value)}
+            >
+              <option value="all">All Components</option>
+              {componentsList.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-            Bugs assigned to you for verification.
+            Bugs ready for testing.
           </p>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {assignedBugs.filter(b => b.status !== 'resolved').length === 0 ? (
+            {assignedBugs.filter(b => selectedComponent === 'all' || b.component === selectedComponent).length === 0 ? (
               <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No pending bugs to test.</div>
             ) : (
-              assignedBugs.filter(b => b.status !== 'resolved').map(bug => (
+              assignedBugs.filter(b => selectedComponent === 'all' || b.component === selectedComponent).map(bug => (
                 <div key={bug.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                     <h4 style={{ margin: 0 }}>{bug.title}</h4>
@@ -140,22 +152,12 @@ export default function TesterDashboard() {
                   </div>
                   
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <button className="btn btn-success" onClick={() => handleMarkFixed(bug.id)} style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}>
-                      <CheckCircle size={14} /> Mark Fixed
+                    <button className="btn btn-success" onClick={() => handleFixed(bug.id)} style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}>
+                      <CheckCircle size={14} /> Fixed
                     </button>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.25rem', borderRadius: 'var(--radius-sm)' }}>
-                      <Send size={14} color="var(--text-muted)" style={{ marginLeft: '0.25rem' }} />
-                      <select 
-                        style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', fontSize: '0.85rem', outline: 'none' }}
-                        onChange={(e) => handleReassign(bug.id, e.target.value)}
-                        defaultValue=""
-                      >
-                        <option value="" disabled>Reassign to Dev...</option>
-                        {developers.map(dev => (
-                          <option key={dev.id} value={dev.id}>{dev.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <button className="btn btn-danger" onClick={() => handleNotFixed(bug.id)} style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer' }}>
+                      Not Fixed
+                    </button>
                   </div>
                 </div>
               ))

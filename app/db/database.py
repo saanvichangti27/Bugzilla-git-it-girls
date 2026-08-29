@@ -5,6 +5,14 @@ from app.config import settings
 from app.schemas.bug import BugResponse, BugListItem, UserSummary, StatusEnum, PriorityEnum, SeverityEnum
 from app.schemas.comment import CommentResponse
 
+def _ensure_uuid(val: Optional[str]) -> Optional[str]:
+    if not val:
+        return None
+    try:
+        return str(uuid.UUID(val))
+    except ValueError:
+        return str(uuid.uuid5(uuid.NAMESPACE_DNS, str(val)))
+
 class Database:
     def __init__(self):
         self.use_supabase = bool(settings.SUPABASE_URL and (settings.SUPABASE_SERVICE_ROLE_KEY or settings.SUPABASE_ANON_KEY))
@@ -83,14 +91,6 @@ class Database:
             "role": "admin",
             "created_at": now.isoformat()
         }
-
-def _ensure_uuid(val: Optional[str]) -> Optional[str]:
-    if not val:
-        return None
-    try:
-        return str(uuid.UUID(val))
-    except ValueError:
-        return str(uuid.uuid5(uuid.NAMESPACE_DNS, str(val)))
 
     # --- BUG METHODS ---
     def create_bug(self, bug_data: dict, reporter: UserSummary) -> dict:

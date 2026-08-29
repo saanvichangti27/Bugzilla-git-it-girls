@@ -22,6 +22,8 @@ class Database:
         # In-memory storage for standalone local execution / tests
         self.bugs_db: Dict[str, dict] = {}
         self.comments_db: Dict[str, List[dict]] = {}
+        self.events_db: Dict[str, dict] = {}
+        self.webhook_logs_db: Dict[str, dict] = {}
         self._seed_data()
 
     def _seed_data(self):
@@ -230,5 +232,145 @@ class Database:
             self.comments_db[bug_id] = []
         self.comments_db[bug_id].append(doc)
         return doc
+
+    # --- EVENT METHODS ---
+    def create_event(self, event_type: str, bug_id: Optional[str], payload: dict) -> dict:
+        event_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        doc = {
+            "id": event_id,
+            "event_type": event_type,
+            "bug_id": bug_id,
+            "payload_json": payload,
+            "processed": False,
+            "created_at": now
+        }
+        
+        if self.use_supabase:
+            try:
+                res = self.client.table("events").insert(doc).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as e:
+                print(f"[SUPABASE ERROR] create_event failed: {e}. Falling back to memory.")
+        
+        self.events_db[event_id] = doc
+        return doc
+
+    def get_unprocessed_events(self) -> List[dict]:
+        if self.use_supabase:
+            try:
+                res = self.client.table("events").select("*").eq("processed", False).order("created_at", desc=False).execute()
+                return res.data or []
+            except Exception as e:
+                print(f"[SUPABASE ERROR] get_unprocessed_events failed: {e}. Falling back to memory.")
+        
+        return [e for e in self.events_db.values() if not e["processed"]]
+
+    def mark_event_processed(self, event_id: str) -> None:
+        if self.use_supabase:
+            try:
+                self.client.table("events").update({"processed": True}).eq("id", event_id).execute()
+            except Exception as e:
+                print(f"[SUPABASE ERROR] mark_event_processed failed: {e}. Falling back to memory.")
+        
+        if event_id in self.events_db:
+            self.events_db[event_id]["processed"] = True
+
+    def get_events(
+        self,
+        event_type: Optional[str] = None,
+        processed: Optional[bool] = None,
+        page: int = 1,
+        page_size: int = 20
+    ) -> Tuple[List[dict], int]:
+        if self.use_supabase:
+            try:
+                query = self.client.table("events").select("*", count="exact")
+                if event_type:
+                    query = query.eq("event_type", event_type)
+                if processed is not None:
+                    query = query.eq("processed", processed)
+                
+                query = query.order("created_at", desc=True)
+                start = (page - 1) * page_size
+                end = start + page_size - 1
+                res = query.range(start, end).execute()
+                total = res.count if res.count is not None else len(res.data)
+                return res.data, total
+            except Exception as e:
+                print(f"[SUPABASE ERROR] get_events failed: {e}. Falling back to memory.")
+
+        items = list(self.events_db.values())
+        if event_type:
+            items = [i for i in items if i["event_type"] == event_type]
+        if processed is not None:
+            items = [i for i in items if i["processed"] == processed]
+        
+        total = len(items)
+        items.sort(key=lambda x: x["created_at"], reverse=True)
+        start = (page - 1) * page_size
+        paginated = items[start:start + page_size]
+        return paginated, total
+
+    # --- WEBHOOK LOG METHODS ---
+    def create_webhook_log(self, event_type: str, destination: str, status_code: Optional[int], success: bool) -> dict:
+        log_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        doc = {
+            "id": log_id,
+            "event_type": event_type,
+            "destination": destination,
+            "status_code": status_code,
+            "success": success,
+            "created_at": now
+        }
+        
+        if self.use_supabase:
+            try:
+                res = self.client.table("webhook_logs").insert(doc).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as e:
+                print(f"[SUPABASE ERROR] create_webhook_log failed: {e}. Falling back to memory.")
+        
+        self.webhook_logs_db[log_id] = doc
+        return doc
+
+    def get_webhook_logs(
+        self,
+        destination: Optional[str] = None,
+        success: Optional[bool] = None,
+        page: int = 1,
+        page_size: int = 20
+    ) -> Tuple[List[dict], int]:
+        if self.use_supabase:
+            try:
+                query = self.client.table("webhook_logs").select("*", count="exact")
+                if destination:
+                    query = query.eq("destination", destination)
+                if success is not None:
+                    query = query.eq("success", success)
+                
+                query = query.order("created_at", desc=True)
+                start = (page - 1) * page_size
+                end = start + page_size - 1
+                res = query.range(start, end).execute()
+                total = res.count if res.count is not None else len(res.data)
+                return res.data, total
+            except Exception as e:
+                print(f"[SUPABASE ERROR] get_webhook_logs failed: {e}. Falling back to memory.")
+
+        items = list(self.webhook_logs_db.values())
+        if destination:
+            items = [i for i in items if i["destination"] == destination]
+        if success is not None:
+            items = [i for i in items if i["success"] == success]
+        
+        total = len(items)
+        items.sort(key=lambda x: x["created_at"], reverse=True)
+        start = (page - 1) * page_size
+        paginated = items[start:start + page_size]
+        return paginated, total
 
 db = Database()

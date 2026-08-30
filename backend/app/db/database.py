@@ -211,6 +211,29 @@ class Database:
         paginated = items[start:end]
         return paginated, total
 
+    def get_open_bugs(self, limit: int = 50) -> List[dict]:
+        if self.use_supabase:
+            try:
+                res = (
+                    self.client.table("bugs")
+                    .select("*")
+                    .in_("status", ["new", "in_progress"])
+                    .order("created_at", desc=True)
+                    .limit(limit)
+                    .execute()
+                )
+                if res.data is not None:
+                    return res.data
+            except Exception as e:
+                print(f"[SUPABASE ERROR] get_open_bugs failed: {e}. Falling back to memory.")
+
+        items = [
+            b for b in self.bugs_db.values()
+            if b.get("status") in ("new", "in_progress")
+        ]
+        items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        return items[:limit]
+
     def update_bug(self, bug_id: str, updates: dict) -> Optional[dict]:
         existing = self.get_bug(bug_id)
         if not existing:

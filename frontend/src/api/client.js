@@ -53,3 +53,16 @@ export const authService = {
     }
   }
 };
+
+// AI service (Phase 3)
+export const aiService = {
+  suggestFields: async (title, description) => {
+    const response = await api.post('/bugs/suggest-fields', { title, description });
+    return response.data;
+  },
+
+  summarizeBug: async (bugId) => {
+    const response = await api.post(`/bugs/${bugId}/summarize`);
+    return response.data;
+  }
+};

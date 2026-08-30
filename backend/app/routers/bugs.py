@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.auth.dependencies import get_current_user, UserPayload
@@ -12,7 +13,14 @@ from app.schemas.bug import (
     BugListResponse,
     UserSummary,
     StatusEnum,
+    PriorityEnum,
+    SeverityEnum,
+    PossibleDuplicate,
+    SuggestFieldsRequest,
+    SuggestFieldsResponse,
+    SummarizeResponse,
 )
+from app.services.ai_service import generate_bug_summary, detect_duplicate_bug, suggest_bug_fields
 
 router = APIRouter(prefix="/bugs", tags=["bugs"])
 
@@ -100,6 +108,23 @@ def list_bugs(
     )
     return ResponseEnvelope.success(response_data)
 
+@router.post("/suggest-fields", response_model=ResponseEnvelope[SuggestFieldsResponse])
+def suggest_fields(
+    request_in: SuggestFieldsRequest,
+    current_user: UserPayload = Depends(get_current_user)
+):
+    result = suggest_bug_fields(request_in.title, request_in.description)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"code": "AI_PROVIDER_ERROR", "message": "Failed to suggest fields via AI provider"}
+        )
+    return ResponseEnvelope.success(SuggestFieldsResponse(
+        component=result["component"],
+        priority=PriorityEnum(result["priority"]),
+        severity=SeverityEnum(result["severity"])
+    ))
+
 @router.post("", response_model=ResponseEnvelope[BugResponse], status_code=status.HTTP_201_CREATED)
 def create_bug(
     bug_in: BugCreate,
@@ -107,7 +132,23 @@ def create_bug(
 ):
     reporter = UserSummary(id=current_user.id, name=current_user.name)
     bug_data = bug_in.model_dump()
+    bug_data["assignee_id"] = None
     raw_bug = db.create_bug(bug_data, reporter=reporter)
+
+    # Non-blocking Duplicate Bug Detection
+    possible_dup = None
+    try:
+        open_bugs = db.get_open_bugs(limit=50)
+        filtered_open = [b for b in open_bugs if str(b.get("id")) != str(raw_bug.get("id"))]
+        dup_info = detect_duplicate_bug(bug_in.title, bug_in.description, filtered_open)
+        if dup_info:
+            possible_dup = PossibleDuplicate(
+                bug_id=dup_info["bug_id"],
+                reason=dup_info["reason"]
+            )
+    except Exception as exc:
+        import logging
+        logging.getLogger("bugs_router").warning(f"[AI DUPLICATE DETECT] Failed silently: {exc!r}")
 
     # Trigger log_event for bug creation
     log_event(
@@ -122,7 +163,42 @@ def create_bug(
     )
 
     formatted = _format_bug_response(raw_bug)
+    if possible_dup:
+        formatted.possible_duplicate = possible_dup
+
     return ResponseEnvelope.success(formatted)
+
+@router.post("/{bug_id}/summarize", response_model=ResponseEnvelope[SummarizeResponse])
+def summarize_bug(
+    bug_id: str,
+    current_user: UserPayload = Depends(get_current_user)
+):
+    raw_bug = db.get_bug(bug_id)
+    if not raw_bug:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "BUG_NOT_FOUND", "message": f"Bug '{bug_id}' does not exist"}
+        )
+
+    comments = db.get_comments(bug_id)
+    summary = generate_bug_summary(raw_bug.get("title", ""), raw_bug.get("description", ""), comments)
+
+    if not summary:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"code": "AI_PROVIDER_ERROR", "message": "Failed to generate AI summary"}
+        )
+
+    now = datetime.now(timezone.utc)
+    db.update_bug(bug_id, {
+        "ai_summary": summary,
+        "ai_summary_generated_at": now.isoformat()
+    })
+
+    return ResponseEnvelope.success(SummarizeResponse(
+        ai_summary=summary,
+        generated_at=now
+    ))
 
 @router.get("/{bug_id}", response_model=ResponseEnvelope[BugResponse])
 def get_bug(

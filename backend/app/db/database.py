@@ -33,7 +33,13 @@ class Database:
         self.events_db: Dict[str, dict] = {}
         self.webhook_logs_db: Dict[str, dict] = {}
         self.users_db: Dict[str, dict] = {}
+        # Priority 2 — Notifications
+        self.notifications_db: List[dict] = []
+        self.notification_preferences_db: List[dict] = []
+        # Priority 3 — Automation Rules
+        self.automation_rules_db: Dict[str, dict] = {}
         self._seed_data()
+
 
     def _seed_data(self):
         # Sample seed bug
@@ -95,6 +101,20 @@ class Database:
             "role": "admin",
             "created_at": now.isoformat()
         }
+        
+        # Seed automation rule
+        rule_id = "33333333-3333-3333-3333-333333333333"
+        self.automation_rules_db[rule_id] = {
+            "id": rule_id,
+            "name": "Auto-notify on Critical Bug",
+            "trigger_event_type": "bug.created",
+            "conditions": [{"field": "priority", "operator": "=", "value": "critical"}],
+            "actions": [{"type": "notify_followers"}],
+            "enabled": True,
+            "created_by": "user-admin-id",
+            "created_at": now.isoformat()
+        }
+
 
     # --- BUG METHODS ---
     def create_bug(self, bug_data: dict, reporter: UserSummary) -> dict:
@@ -645,5 +665,327 @@ class Database:
             "assigned_to_me": assigned,
             "resolved_this_week": resolved
         }
+
+
+    # ---------------------------------------------------------------------------
+    # NOTIFICATION METHODS (Priority 2)
+    # ---------------------------------------------------------------------------
+
+    # Default preference matrix applied to every new user on sign-up
+    _DEFAULT_PREFERENCES = [
+        # (event_type, relationship, channel, enabled)
+        ("bug.created",        "reporter", "in_app", True),
+        ("bug.created",        "reporter", "email",  False),
+        ("bug.status_changed", "reporter", "in_app", True),
+        ("bug.status_changed", "reporter", "email",  False),
+        ("bug.status_changed", "assignee", "in_app", True),
+        ("bug.status_changed", "assignee", "email",  True),
+        ("bug.resolved",       "reporter", "in_app", True),
+        ("bug.resolved",       "reporter", "email",  True),
+        ("bug.resolved",       "follower", "in_app", True),
+        ("bug.resolved",       "follower", "email",  False),
+        ("bug.comment_added",  "reporter", "in_app", True),
+        ("bug.comment_added",  "reporter", "email",  False),
+        ("bug.comment_added",  "assignee", "in_app", True),
+        ("bug.comment_added",  "assignee", "email",  True),
+    ]
+
+    def seed_default_notification_preferences(self, user_id: str) -> None:
+        """Called after user creation to seed default notification preferences."""
+        now = datetime.now(timezone.utc).isoformat()
+        if self.use_supabase:
+            try:
+                rows = [
+                    {
+                        "user_id": user_id,
+                        "event_type": et,
+                        "relationship": rel,
+                        "channel": ch,
+                        "enabled": en,
+                    }
+                    for et, rel, ch, en in self._DEFAULT_PREFERENCES
+                ]
+                self.client.table("notification_preferences").upsert(rows).execute()
+                return
+            except Exception as exc:
+                print(f"[SUPABASE] seed_default_notification_preferences failed: {exc}. Using memory.")
+
+        for et, rel, ch, en in self._DEFAULT_PREFERENCES:
+            self.notification_preferences_db.append({
+                "user_id": user_id,
+                "event_type": et,
+                "relationship": rel,
+                "channel": ch,
+                "enabled": en,
+            })
+
+    def get_notification_preferences(self, user_id: str) -> List[dict]:
+        if self.use_supabase:
+            try:
+                res = self.client.table("notification_preferences").select("*").eq("user_id", user_id).execute()
+                prefs = res.data or []
+                if not prefs:
+                    self.seed_default_notification_preferences(user_id)
+                    res = self.client.table("notification_preferences").select("*").eq("user_id", user_id).execute()
+                    prefs = res.data or []
+                return prefs
+            except Exception as exc:
+                print(f"[SUPABASE] get_notification_preferences failed: {exc}. Using memory.")
+
+        prefs = [p for p in self.notification_preferences_db if p["user_id"] == user_id]
+        if not prefs:
+            self.seed_default_notification_preferences(user_id)
+            prefs = [p for p in self.notification_preferences_db if p["user_id"] == user_id]
+        return prefs
+
+    def upsert_notification_preference(self, user_id: str, event_type: str,
+                                        relationship: str, channel: str, enabled: bool) -> dict:
+        row = {
+            "user_id": user_id,
+            "event_type": event_type,
+            "relationship": relationship,
+            "channel": channel,
+            "enabled": enabled,
+        }
+        if self.use_supabase:
+            try:
+                self.client.table("notification_preferences").upsert(row).execute()
+                return row
+            except Exception as exc:
+                print(f"[SUPABASE] upsert_notification_preference failed: {exc}.")
+
+        for p in self.notification_preferences_db:
+            if (p["user_id"] == user_id and p["event_type"] == event_type
+                    and p["relationship"] == relationship and p["channel"] == channel):
+                p["enabled"] = enabled
+                return p
+        self.notification_preferences_db.append(row)
+        return row
+
+    def is_notification_enabled(self, user_id: str, event_type: str,
+                                  relationship: str, channel: str) -> bool:
+        if self.use_supabase:
+            try:
+                res = (self.client.table("notification_preferences")
+                       .select("enabled")
+                       .eq("user_id", user_id)
+                       .eq("event_type", event_type)
+                       .eq("relationship", relationship)
+                       .eq("channel", channel)
+                       .execute())
+                if res.data:
+                    return bool(res.data[0]["enabled"])
+                # No row → default to True for in_app, False for email
+                return channel == "in_app"
+            except Exception:
+                pass
+
+        for p in self.notification_preferences_db:
+            if (p["user_id"] == user_id and p["event_type"] == event_type
+                    and p["relationship"] == relationship and p["channel"] == channel):
+                return bool(p["enabled"])
+        return channel == "in_app"
+
+    def create_notification(self, user_id: str, event_type: str,
+                              relationship: str, title: str,
+                              body: str = "", bug_id: Optional[str] = None) -> dict:
+        notif = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "event_type": event_type,
+            "relationship": relationship,
+            "title": title,
+            "body": body,
+            "bug_id": bug_id,
+            "read": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if self.use_supabase:
+            try:
+                self.client.table("notifications").insert(notif).execute()
+                return notif
+            except Exception as exc:
+                print(f"[SUPABASE] create_notification failed: {exc}. Using memory.")
+
+        self.notifications_db.append(notif)
+        return notif
+
+    def get_notifications(self, user_id: str, unread_only: bool = False) -> List[dict]:
+        if self.use_supabase:
+            try:
+                q = self.client.table("notifications").select("*").eq("user_id", user_id)
+                if unread_only:
+                    q = q.eq("read", False)
+                res = q.order("created_at", desc=True).execute()
+                return res.data or []
+            except Exception as exc:
+                print(f"[SUPABASE] get_notifications failed: {exc}. Using memory.")
+
+        notifs = [n for n in self.notifications_db if n["user_id"] == user_id]
+        if unread_only:
+            notifs = [n for n in notifs if not n["read"]]
+        return sorted(notifs, key=lambda x: x["created_at"], reverse=True)
+
+    def mark_notification_read(self, notification_id: str, user_id: str) -> Optional[dict]:
+        if self.use_supabase:
+            try:
+                res = (self.client.table("notifications")
+                       .update({"read": True})
+                       .eq("id", notification_id)
+                       .eq("user_id", user_id)
+                       .execute())
+                return res.data[0] if res.data else None
+            except Exception as exc:
+                print(f"[SUPABASE] mark_notification_read failed: {exc}. Using memory.")
+
+        for n in self.notifications_db:
+            if n["id"] == notification_id and n["user_id"] == user_id:
+                n["read"] = True
+                return n
+        return None
+
+    def mark_all_notifications_read(self, user_id: str) -> int:
+        if self.use_supabase:
+            try:
+                res = (self.client.table("notifications")
+                       .update({"read": True})
+                       .eq("user_id", user_id)
+                       .eq("read", False)
+                       .execute())
+                return len(res.data or [])
+            except Exception as exc:
+                print(f"[SUPABASE] mark_all_notifications_read failed: {exc}. Using memory.")
+
+        count = 0
+        for n in self.notifications_db:
+            if n["user_id"] == user_id and not n["read"]:
+                n["read"] = True
+                count += 1
+        return count
+
+    def get_unread_count(self, user_id: str) -> int:
+        if self.use_supabase:
+            try:
+                res = (self.client.table("notifications")
+                       .select("id", count="exact")
+                       .eq("user_id", user_id)
+                       .eq("read", False)
+                       .execute())
+                return res.count or 0
+            except Exception:
+                pass
+        return sum(1 for n in self.notifications_db if n["user_id"] == user_id and not n["read"])
+
+    # ---------------------------------------------------------------------------
+    # SEARCH SIMILAR BUGS (Priority 2a — upgraded full-text search)
+    # ---------------------------------------------------------------------------
+
+    def search_similar_bugs(self, query_str: str, limit: int = 8) -> List[dict]:
+        """Search bugs by title/description. Uses Supabase ilike when available."""
+        q = query_str.strip()
+        if not q:
+            return []
+
+        if self.use_supabase:
+            try:
+                # ilike search on title and description
+                res = (self.client.table("bugs")
+                       .select("*")
+                       .or_(f"title.ilike.%{q}%,description.ilike.%{q}%")
+                       .limit(limit)
+                       .execute())
+                return res.data or []
+            except Exception as exc:
+                print(f"[SUPABASE] search_similar_bugs failed: {exc}. Using memory.")
+
+        q_lower = q.lower()
+        results = []
+        for bug in self.bugs_db.values():
+            title = bug.get("title", "").lower()
+            desc = bug.get("description", "").lower()
+            if q_lower in title or q_lower in desc:
+                results.append(bug)
+            if len(results) >= limit:
+                break
+        return results
+
+    # ---------------------------------------------------------------------------
+    # AUTOMATION RULES METHODS (Priority 3)
+    # ---------------------------------------------------------------------------
+
+    def create_automation_rule(self, rule_data: dict) -> dict:
+        rule_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        
+        doc = {
+            "id": rule_id,
+            "name": rule_data["name"],
+            "trigger_event_type": rule_data["trigger_event_type"],
+            "conditions": rule_data.get("conditions") or [],
+            "actions": rule_data.get("actions") or [],
+            "enabled": rule_data.get("enabled", True),
+            "created_by": rule_data.get("created_by"),
+            "created_at": now
+        }
+        
+        if self.use_supabase:
+            try:
+                res = self.client.table("automation_rules").insert(doc).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as exc:
+                print(f"[SUPABASE] create_automation_rule failed: {exc}. Using memory.")
+ 
+        self.automation_rules_db[rule_id] = doc
+        return doc
+ 
+    def get_automation_rules(self) -> List[dict]:
+        if self.use_supabase:
+            try:
+                res = self.client.table("automation_rules").select("*").order("created_at", desc=True).execute()
+                return res.data or []
+            except Exception as exc:
+                print(f"[SUPABASE] get_automation_rules failed: {exc}. Using memory.")
+ 
+        rules = list(self.automation_rules_db.values())
+        return sorted(rules, key=lambda x: x["created_at"], reverse=True)
+ 
+    def get_automation_rule(self, rule_id: str) -> Optional[dict]:
+        if self.use_supabase:
+            try:
+                res = self.client.table("automation_rules").select("*").eq("id", rule_id).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as exc:
+                print(f"[SUPABASE] get_automation_rule failed: {exc}. Using memory.")
+ 
+        return self.automation_rules_db.get(rule_id)
+ 
+    def update_automation_rule(self, rule_id: str, updates: dict) -> Optional[dict]:
+        if self.use_supabase:
+            try:
+                res = self.client.table("automation_rules").update(updates).eq("id", rule_id).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as exc:
+                print(f"[SUPABASE] update_automation_rule failed: {exc}. Using memory.")
+ 
+        if rule_id in self.automation_rules_db:
+            self.automation_rules_db[rule_id].update(updates)
+            return self.automation_rules_db[rule_id]
+        return None
+ 
+    def delete_automation_rule(self, rule_id: str) -> bool:
+        if self.use_supabase:
+            try:
+                res = self.client.table("automation_rules").delete().eq("id", rule_id).execute()
+                return True
+            except Exception as exc:
+                print(f"[SUPABASE] delete_automation_rule failed: {exc}. Using memory.")
+ 
+        if rule_id in self.automation_rules_db:
+            del self.automation_rules_db[rule_id]
+            return True
+        return False
 
 db = Database()

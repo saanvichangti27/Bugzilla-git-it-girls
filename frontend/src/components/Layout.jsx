@@ -1,10 +1,31 @@
+import { useState, useEffect } from 'react';
 import { Outlet, Navigate, NavLink, useNavigate } from 'react-router-dom';
-import { authService } from '../api/client';
-import { LayoutDashboard, Bug, LogOut, Settings } from 'lucide-react';
+import { authService, notificationService } from '../api/client';
+import { LayoutDashboard, Bug, LogOut, Settings, Bell, Zap } from 'lucide-react';
 
 export default function Layout() {
   const user = authService.getCurrentUser();
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchUnreadCount = async () => {
+      try {
+        const res = await notificationService.count();
+        setUnreadCount(res.data?.count || 0);
+      } catch (err) {
+        console.error('Error fetching unread notification count:', err);
+      }
+    };
+
+    fetchUnreadCount();
+    
+    // Poll every 25 seconds
+    const interval = setInterval(fetchUnreadCount, 25000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   if (!user) {
     return <Navigate to="/auth" replace />;
@@ -33,11 +54,31 @@ export default function Layout() {
             <Bug size={18} />
             Bug Explorer
           </NavLink>
+          <NavLink to="/notifications" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Bell size={18} />
+              Notifications
+            </span>
+            {unreadCount > 0 && (
+              <span style={{
+                background: 'var(--primary)',
+                color: '#fff',
+                padding: '0.1rem 0.4rem',
+                borderRadius: '10px',
+                fontSize: '10px',
+                fontWeight: 700,
+                marginRight: '0.5rem',
+              }}>
+                {unreadCount}
+              </span>
+            )}
+          </NavLink>
+
           
           {user.role === 'admin' && (
             <NavLink to="/admin" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
-              <Settings size={18} />
-              Admin
+              <Zap size={18} />
+              Automation
             </NavLink>
           )}
         </nav>

@@ -58,6 +58,12 @@ def signup(body: SignupRequest):
         if not user_doc:
             user_doc = {"id": user_id, "name": body.name, "email": body.email, "role": body.role}
 
+    # Seed default notification preferences (Priority 2)
+    try:
+        db.seed_default_notification_preferences(user_id)
+    except Exception:
+        pass  # Non-fatal if it fails
+
     return ResponseEnvelope.success(
         AuthResponseData(
             user=AuthUserResponse(**user_doc),

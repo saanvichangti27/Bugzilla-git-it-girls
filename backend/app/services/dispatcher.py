@@ -33,6 +33,7 @@ async def handle_github(event: dict):
             title=raw_bug.get("title", ""),
             description=raw_bug.get("description", ""),
             frontend_url=settings.APP_FRONTEND_URL,
+            reporter_id=raw_bug.get("reporter_id"),
         )
 
         if result:

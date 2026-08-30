@@ -19,6 +19,7 @@ def create_github_issue(
     title: str,
     description: str,
     frontend_url: str,
+    reporter_id: Optional[str] = None,
 ) -> Optional[dict]:
     """
     Create a GitHub issue for the given bug.
@@ -28,16 +29,28 @@ def create_github_issue(
     """
     try:
         from app.config import settings
+        from app.db.database import db
         import github as pygithub
 
-        pat = settings.GITHUB_PAT
-        owner = settings.GITHUB_REPO_OWNER
-        repo_name = settings.GITHUB_REPO_NAME
+        pat = None
+        repo_full_name = None
 
-        if not pat or not owner or not repo_name:
+        if reporter_id:
+            user_doc = db.get_user_by_id(reporter_id)
+            if user_doc and user_doc.get("github_token") and user_doc.get("github_repo"):
+                pat = user_doc["github_token"]
+                repo_full_name = user_doc["github_repo"]
+
+        if not pat or not repo_full_name:
+            pat = settings.GITHUB_PAT or settings.GITHUB_TOKEN
+            if settings.GITHUB_REPO_OWNER and settings.GITHUB_REPO_NAME:
+                repo_full_name = f"{settings.GITHUB_REPO_OWNER}/{settings.GITHUB_REPO_NAME}"
+            else:
+                repo_full_name = settings.GITHUB_REPO
+
+        if not pat or not repo_full_name:
             logger.warning(
-                "[GITHUB] Skipping issue creation: GITHUB_PAT / GITHUB_REPO_OWNER / "
-                "GITHUB_REPO_NAME are not configured."
+                "[GITHUB] Skipping issue creation: GITHUB_PAT / GITHUB_REPO are not configured."
             )
             return None
 
@@ -45,7 +58,7 @@ def create_github_issue(
         auth = pygithub.Auth.Token(pat)
         gh = pygithub.Github(auth=auth)
 
-        repo = gh.get_repo(f"{owner}/{repo_name}")
+        repo = gh.get_repo(repo_full_name)
 
         bug_url = f"{frontend_url.rstrip('/')}/bugs/{bug_id}"
         body = (

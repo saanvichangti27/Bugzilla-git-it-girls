@@ -242,6 +242,7 @@ def update_bug(
             event_type="bug.status_changed",
             bug_id=bug_id,
             payload={
+                "title": raw_bug.get("title", "Unknown Bug"),
                 "from": old_status,
                 "to": provided_fields["status"],
                 "updated_by": current_user.id

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Literal
+from typing import Literal, Optional
 from uuid import UUID
 from datetime import datetime
 
@@ -9,6 +9,10 @@ class UserResponse(BaseModel):
     email: EmailStr
     role: str
     created_at: datetime
+    discord_username: Optional[str] = None
+
+class UserUpdateRequest(BaseModel):
+    discord_username: Optional[str] = None
 
 class RoleUpdateRequest(BaseModel):
     role: Literal['reporter', 'tester', 'developer', 'admin']

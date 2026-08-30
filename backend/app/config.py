@@ -12,5 +12,8 @@ class Settings:
     GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")
     GITHUB_REPO: str = os.getenv("GITHUB_REPO", "")
     BACKEND_PUBLIC_URL: str = os.getenv("BACKEND_PUBLIC_URL", "http://127.0.0.1:8000")
+    DISCORD_WEBHOOK_URL: str = os.getenv("DISCORD_WEBHOOK_URL", "")
+    DISCORD_CREATED_WEBHOOK_URL: str = os.getenv("DISCORD_CREATED_WEBHOOK_URL", "")
+    DISCORD_RESOLVED_WEBHOOK_URL: str = os.getenv("DISCORD_RESOLVED_WEBHOOK_URL", "")
 
 settings = Settings()

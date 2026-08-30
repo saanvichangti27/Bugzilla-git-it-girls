@@ -64,3 +64,21 @@ def update_github_settings(
     setup_repository_webhook(body.github_token, body.github_repo, app_webhook_url)
 
     return ResponseEnvelope.success(UserResponse(**updated_user))
+
+from app.schemas.user import UserUpdateRequest
+
+@router.patch("/me", response_model=ResponseEnvelope[UserResponse])
+def update_me(
+    body: UserUpdateRequest,
+    current_user: UserPayload = Depends(get_current_user)
+):
+    user_doc = db.get_user_by_id(current_user.id)
+    if not user_doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "USER_NOT_FOUND", "message": "User not found"})
+    
+    updated_user = db.update_user_discord(current_user.id, body.discord_username)
+    if not updated_user:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"code": "UPDATE_FAILED", "message": "Failed to update user"})
+    
+    return ResponseEnvelope.success(UserResponse(**updated_user))
+

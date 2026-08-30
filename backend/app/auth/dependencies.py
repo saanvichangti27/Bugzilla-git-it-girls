@@ -53,8 +53,31 @@ def decode_token(token: str) -> UserPayload:
             detail={"code": "INVALID_TOKEN", "message": "Token missing 'sub' or 'id' claim."}
         )
 
-    role = payload.get("role") or payload.get("user_metadata", {}).get("role") or "reporter"
-    name = payload.get("name") or payload.get("user_metadata", {}).get("name") or payload.get("email", "User").split("@")[0]
+    user_metadata = payload.get("user_metadata") or {}
+    app_metadata = payload.get("app_metadata") or {}
+
+    role = user_metadata.get("role") or app_metadata.get("role")
+    if not role or str(role).lower() == "authenticated":
+        raw_role = payload.get("role")
+        if raw_role and str(raw_role).lower() != "authenticated":
+            role = raw_role
+        else:
+            from app.db.database import db
+            user_doc = db.get_user_by_id(str(user_id))
+            if user_doc and user_doc.get("role"):
+                role = user_doc["role"]
+            else:
+                role = "reporter"
+
+    name = user_metadata.get("name") or payload.get("name")
+    if not name:
+        from app.db.database import db
+        user_doc = db.get_user_by_id(str(user_id))
+        if user_doc and user_doc.get("name"):
+            name = user_doc["name"]
+        else:
+            name = payload.get("email", "User").split("@")[0]
+
     email = payload.get("email", f"{user_id}@example.com")
 
     return UserPayload(

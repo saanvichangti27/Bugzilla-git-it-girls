@@ -86,7 +86,6 @@ export default function AdminDashboard() {
                     <th style={{ padding: '0.75rem' }}>Title</th>
                     <th style={{ padding: '0.75rem' }}>Status</th>
                     <th style={{ padding: '0.75rem' }}>Severity</th>
-                    <th style={{ padding: '0.75rem' }}>Assignee</th>
                     <th style={{ padding: '0.75rem' }}>Created</th>
                   </tr>
                 </thead>
@@ -100,9 +99,6 @@ export default function AdminDashboard() {
                         </span>
                       </td>
                       <td style={{ padding: '0.75rem' }}>{bug.severity}</td>
-                      <td style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>
-                        {bug.assignee ? bug.assignee.name : 'Unassigned'}
-                      </td>
                       <td style={{ padding: '0.75rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                         {new Date(bug.created_at).toLocaleDateString()}
                       </td>
@@ -110,7 +106,7 @@ export default function AdminDashboard() {
                   ))}
                   {bugs.length === 0 && (
                     <tr>
-                      <td colSpan="5" style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      <td colSpan="4" style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                         No bugs found in the system.
                       </td>
                     </tr>

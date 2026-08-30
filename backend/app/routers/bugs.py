@@ -158,50 +158,67 @@ def update_bug(
     if not provided_fields:
         return ResponseEnvelope.success(_format_bug_response(raw_bug))
 
-    if role == "tester" and (raw_bug.get("assignee_id") == current_user.id or raw_bug.get("status") == StatusEnum.READY_FOR_TESTING.value):
-        # Tester assigned to the bug or bug is ready for testing can update status and assignee
+    if role == "tester":
         disallowed_fields = set(provided_fields.keys()) - {"status", "assignee_id"}
         if disallowed_fields:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "FORBIDDEN", "message": f"Testers can only update status and assignee_id for bugs they test or are ready for testing."}
-            )
-    elif role in ["reporter", "tester"]:
-        # 1. Must be reporter of this bug
+            is_reporter = raw_bug.get("reporter_id") == current_user.id
+            if is_reporter and raw_bug.get("status") == StatusEnum.NEW.value:
+                disallowed_fields = disallowed_fields - {"title", "description"}
+            if disallowed_fields:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={"code": "FORBIDDEN", "message": f"Testers can only update status and assignee_id (or title/description on own new bugs). Disallowed: {', '.join(sorted(disallowed_fields))}"}
+                )
+    elif role == "reporter":
         if raw_bug.get("reporter_id") != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "FORBIDDEN", "message": "Reporters/testers can only edit bugs they reported, unless assigned to them."}
+                detail={"code": "FORBIDDEN", "message": "Reporters can only edit bugs they reported."}
             )
-
-        # 2. Bug must be in "new" status
         if raw_bug.get("status") != StatusEnum.NEW.value:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "FORBIDDEN", "message": "Reporters/testers can only edit bugs while status is 'new'."}
+                detail={"code": "FORBIDDEN", "message": "Reporters can only edit bugs while status is 'new'."}
             )
-
-        # 3. May ONLY edit title and description
         disallowed_fields = set(provided_fields.keys()) - {"title", "description"}
         if disallowed_fields:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={
                     "code": "FORBIDDEN",
-                    "message": f"Reporters/testers are not permitted to edit fields: {', '.join(sorted(disallowed_fields))}"
+                    "message": f"Reporters are not permitted to edit fields: {', '.join(sorted(disallowed_fields))}"
                 }
             )
     elif role == "developer":
-        if raw_bug.get("assignee_id") != current_user.id and raw_bug.get("assignee_id") is not None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "FORBIDDEN", "message": "Developers can only edit bugs assigned to them or unassigned bugs."}
-            )
+        # Developers may update any field, but status transitions are restricted:
+        # they can only move bugs to in_progress or ready_for_testing.
+        if "status" in provided_fields:
+            allowed_transitions = {StatusEnum.IN_PROGRESS.value, StatusEnum.READY_FOR_TESTING.value}
+            new_status = provided_fields["status"]
+            # Handle both enum value strings and StatusEnum instances
+            new_status_val = new_status.value if hasattr(new_status, 'value') else new_status
+            if new_status_val not in allowed_transitions:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={
+                        "code": "FORBIDDEN",
+                        "message": f"Developers can only set status to 'in_progress' or 'ready_for_testing', not '{new_status_val}'."
+                    }
+                )
     elif role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={"code": "FORBIDDEN", "message": f"Role '{role}' is not authorized to edit bugs."}
         )
+
+    # Resolve assignee_name if assignee_id is updated
+    if "assignee_id" in provided_fields:
+        assignee_id = provided_fields["assignee_id"]
+        if assignee_id:
+            user_doc = db.get_user_by_id(assignee_id)
+            provided_fields["assignee_name"] = user_doc.get("name", "Assigned User") if user_doc else "Assigned User"
+        else:
+            provided_fields["assignee_name"] = None
 
     # Execute DB update
     old_status = raw_bug.get("status")

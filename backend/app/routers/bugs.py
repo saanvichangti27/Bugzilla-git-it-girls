@@ -7,7 +7,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, 
 from app.auth.dependencies import get_current_user, UserPayload
 from app.db.database import db
 from app.events.events import log_event
-from app.services.github import create_github_issue
 from app.schemas.envelope import ResponseEnvelope, ErrorDetail
 from app.schemas.bug import (
     BugCreate,
@@ -109,19 +108,24 @@ async def upload_attachment(
     file: UploadFile = File(...),
     current_user: UserPayload = Depends(get_current_user)
 ):
-    upload_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads"))
-    os.makedirs(upload_dir, exist_ok=True)
-    
     file_id = str(uuid.uuid4())
     filename = f"{file_id}_{file.filename}"
-    filepath = os.path.join(upload_dir, filename)
-    
-    with open(filepath, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-        
-    file_size = os.path.getsize(filepath)
-    file_url = f"/uploads/{filename}"
     now = datetime.now(timezone.utc).isoformat()
+    
+    file_bytes = await file.read()
+    file_size = len(file_bytes)
+    
+    if db.use_supabase:
+        content_type = file.content_type or "application/octet-stream"
+        db.client.storage.from_("attachments").upload(filename, file_bytes, file_options={"content-type": content_type})
+        file_url = db.client.storage.from_("attachments").get_public_url(filename)
+    else:
+        upload_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads"))
+        os.makedirs(upload_dir, exist_ok=True)
+        filepath = os.path.join(upload_dir, filename)
+        with open(filepath, "wb") as buffer:
+            buffer.write(file_bytes)
+        file_url = f"/uploads/{filename}"
     
     attachment = Attachment(
         id=file_id,
@@ -220,16 +224,7 @@ def create_bug(
     bug_data["assignee_id"] = None
     raw_bug = db.create_bug(bug_data, reporter=reporter)
 
-    # Sync to GitHub
-    github_issue = create_github_issue(raw_bug, current_user.id)
-    if github_issue:
-        # Update the bug in the DB with the GitHub Issue details
-        db.update_bug(raw_bug["id"], {
-            "github_issue_id": github_issue["id"],
-            "github_issue_url": github_issue["html_url"]
-        })
-        raw_bug["github_issue_id"] = github_issue["id"]
-        raw_bug["github_issue_url"] = github_issue["html_url"]
+    # Sync to GitHub is handled asynchronously by the dispatcher on 'bug.created'
 
     # Non-blocking Duplicate Bug Detection
     possible_dup = None

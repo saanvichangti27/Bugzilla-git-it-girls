@@ -185,56 +185,11 @@ export default function Dashboard() {
   // Render helpers
   // ---------------------------------------------------------------------------
   const renderCreateForm = () => (
-<<<<<<< HEAD
-    <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
-      <h3 style={{ marginTop: 0, marginBottom: '1.5rem' }}>Report New Bug</h3>
-      <form onSubmit={handleCreateBug} style={{ display: 'grid', gap: '1rem' }}>
-        <input className="input-field" placeholder="Bug Title" value={newBug.title} onChange={e => setNewBug({...newBug, title: e.target.value})} required />
-        <textarea className="input-field" placeholder="Description" rows={3} value={newBug.description} onChange={e => setNewBug({...newBug, description: e.target.value})} required />
-
-        {/* AI Auto-suggest button */}
-        <button
-          type="button"
-          onClick={handleAutoSuggest}
-          disabled={aiSuggesting}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 1rem',
-            background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(99,102,241,0.2))',
-            border: '1px solid rgba(139,92,246,0.4)', borderRadius: 'var(--radius-sm)',
-            color: '#a78bfa', cursor: aiSuggesting ? 'wait' : 'pointer', fontSize: '0.85rem', fontWeight: 600,
-            width: 'fit-content', transition: 'all 0.2s',
-          }}
-        >
-          {aiSuggesting
-            ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Asking Gemini...</>
-            : <><Sparkles size={14} /> Auto-fill with AI ✨</>}
-        </button>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <select className="input-field" value={newBug.priority} onChange={e => setNewBug({ ...newBug, priority: e.target.value })} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
-            <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option>
-          </select>
-          <select className="input-field" value={newBug.severity} onChange={e => setNewBug({ ...newBug, severity: e.target.value })} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
-            <option value="trivial">Trivial</option><option value="minor">Minor</option><option value="major">Major</option><option value="critical">Critical</option><option value="blocker">Blocker</option>
-          </select>
-          <select className="input-field" value={newBug.component} onChange={e => setNewBug({ ...newBug, component: e.target.value })} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
-            {COMPONENTS.map(c => (
-              <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
-            ))}
-          </select>
-        </div>
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-          <button type="submit" className="btn btn-primary">Submit Bug</button>
-          <button type="button" className="btn btn-outline" onClick={() => setShowCreateForm(false)}>Cancel</button>
-        </div>
-      </form>
-    </div>
-=======
     <AddBugModal
       isOpen={showCreateForm}
       onClose={() => setShowCreateForm(false)}
       onBugCreated={() => fetchDashboardData()}
     />
->>>>>>> raksha
   );
 
   const pillStyle = (active) => ({
@@ -296,7 +251,6 @@ export default function Dashboard() {
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <td style={{ padding: '1rem', fontWeight: 500 }}>
-<<<<<<< HEAD
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <div>{bug.title}</div>
                     {bug.github_issue_url && (
@@ -305,9 +259,6 @@ export default function Dashboard() {
                       </a>
                     )}
                   </div>
-                  {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
-=======
-                  <div>{bug.title}</div>
                   {/* File & Photo Attachments viewable by Developer */}
                   {bug.attachments && bug.attachments.length > 0 && (
                     <div style={{ marginTop: '0.4rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
@@ -333,8 +284,7 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  {bug.possible_duplicate && (
->>>>>>> raksha
+                  {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
                     <div style={{
                       marginTop: '0.35rem', padding: '0.25rem 0.55rem',
                       background: 'rgba(245,158,11,0.12)', borderLeft: '3px solid #fbbf24',

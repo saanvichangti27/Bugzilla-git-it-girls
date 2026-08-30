@@ -140,7 +140,7 @@ Canonical event types: \`bug.created\`, \`bug.status\_changed\`, \`bug.updated\`
 Hosted on Render — the deployed Render URL is the real webhook target from Day 1, no tunneling needed.
 
 \#\#\# POST /webhooks/github  
-Inbound receiver GitHub calls directly. Verifies \`X-Hub-Signature-256\` against the webhook secret. On \`pull\_request\` / \`action: closed\` / \`merged: true\` → parse bug ID from PR title/body (define a convention, e.g. \`Fixes \#BUG-123\`) → set bug status to \`resolved\` internally → \`events\` row \`github.pr\_merged\`.  
+Inbound receiver GitHub calls directly. Verifies \`X-Hub-Signature-256\` against the webhook secret. On \`pull\_request\` / \`action: closed\` / \`merged: true\` → parse bug ID from PR title/body (define a convention, e.g. \`Fixes \#BUG-<uuid>\`) → set bug status to \`resolved\` internally → \`events\` row \`github.pr\_merged\`.  
 Response \`200\`: \`{ "data": { "received": true } }\` — return fast, do heavy work async.
 
 \#\#\# Internal (triggered by dispatcher on \`bug.created\`, not a public endpoint)  

@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import os
 from app.config import settings
-from app.routers import bugs, comments, events, webhook_logs, auth, users, dashboard, webhooks, github_webhook
+from app.routers import bugs, comments, events, webhook_logs, auth, users, dashboard, github_webhook
 from app.services.dispatcher import start_dispatcher
 
 UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
@@ -107,7 +107,6 @@ app.include_router(webhook_logs.router, prefix=settings.API_PREFIX)
 app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(users.router, prefix=settings.API_PREFIX)
 app.include_router(dashboard.router, prefix=settings.API_PREFIX)
-app.include_router(webhooks.router, prefix=settings.API_PREFIX)
 
 # GitHub webhook — no /api/v1 prefix, no JWT auth (GitHub calls this directly)
 app.include_router(github_webhook.router)

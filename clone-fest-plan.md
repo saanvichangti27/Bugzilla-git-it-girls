@@ -7,7 +7,7 @@
 **Team size:** 3
 **Duration:** 3 days
 
-Bugzilla is a mature, open-source, web-based bug/issue tracking system. The goal of this project is **not** to rebuild Bugzilla from scratch and **not** to strip it down to "just a pretty UI." The goal is to **modernize Bugzilla's experience while keeping its core issue-tracking power**, with the key innovation being an **event-driven integration layer** connecting bug tracking to GitHub, Slack, and AI.
+Bugzilla is a mature, open-source, web-based bug/issue tracking system. The goal of this project is **not** to rebuild Bugzilla from scratch and **not** to strip it down to "just a pretty UI." The goal is to **modernize Bugzilla's experience while keeping its core issue-tracking power**, with the key innovation being an **event-driven integration layer** connecting bug tracking to GitHub, Discord, and AI.
 
 > **Vision:** A centralized, event-driven issue management platform that connects bug tracking, development, communication, and AI into one workflow.
 
@@ -20,13 +20,13 @@ Bugzilla is a mature, open-source, web-based bug/issue tracking system. The goal
 1. Build a working bug-tracking application that preserves Bugzilla's core concepts (bugs, status, priority, severity, components, comments, assignees).
 2. Layer a **modern, simplified UI** on top of it.
 3. Add an **event system** so every meaningful action (bug created, status changed, comment added) emits an event.
-4. On top of the event system, build **integrations** (GitHub, Slack, AI) that react to those events — this is your main differentiator for the "Innovation" and "Technical Implementation" judging categories.
+4. On top of the event system, build **integrations** (GitHub, Discord, AI) that react to those events — this is your main differentiator for the "Innovation" and "Technical Implementation" judging categories.
 5. Document everything clearly, since **Documentation & Explanation is 10/100 marks** and a working demo backed by clear docs scores far better than an undocumented one.
 
 The project is split into two build phases:
 
 - **Phase 1 (MVP):** Core bug tracking + minimal modern UI + event system.
-- **Phase 2 (Add-ons):** GitHub integration, AI bug summarization, Slack notifications, webhook logs, notification center, analytics dashboard.
+- **Phase 2 (Add-ons):** GitHub integration, AI bug summarization, Discord notifications, webhook logs, notification center, analytics dashboard.
 
 ---
 

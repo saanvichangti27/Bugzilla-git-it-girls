@@ -115,11 +115,19 @@ async def upload_attachment(
     file_bytes = await file.read()
     file_size = len(file_bytes)
     
+    use_local = False
     if db.use_supabase:
-        content_type = file.content_type or "application/octet-stream"
-        db.client.storage.from_("attachments").upload(filename, file_bytes, file_options={"content-type": content_type})
-        file_url = db.client.storage.from_("attachments").get_public_url(filename)
+        try:
+            content_type = file.content_type or "application/octet-stream"
+            db.client.storage.from_("attachments").upload(filename, file_bytes, file_options={"content-type": content_type})
+            file_url = db.client.storage.from_("attachments").get_public_url(filename)
+        except Exception as exc:
+            print(f"[SUPABASE STORAGE WARN] Upload to Supabase failed: {exc}. Falling back to local upload.")
+            use_local = True
     else:
+        use_local = True
+
+    if use_local:
         upload_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads"))
         os.makedirs(upload_dir, exist_ok=True)
         filepath = os.path.join(upload_dir, filename)

@@ -69,14 +69,62 @@ def update_automation_rules(
     rules: List[Dict[str, Any]],
     admin_user: UserPayload = Depends(require_admin)
 ):
+    import uuid
+    # Sanitize and assign IDs to rules if missing
+    for rule in rules:
+        if not rule.get("id"):
+            rule["id"] = str(uuid.uuid4())
+
     if db.use_supabase:
         try:
-            # Delete all and insert new
-            db.client.table("automation_rules").delete().neq("id", "impossible").execute()
+            # Fetch existing IDs to delete them explicitly (avoid non-UUID literal comparison)
+            existing = db.client.table("automation_rules").select("id").execute()
+            existing_ids = [r["id"] for r in (existing.data or [])]
+            if existing_ids:
+                db.client.table("automation_rules").delete().in_("id", existing_ids).execute()
             db.client.table("automation_rules").insert(rules).execute()
         except Exception as e:
             print(f"[SUPABASE ERROR] update_automation_rules failed: {e}")
             raise HTTPException(status_code=500, detail="Database error updating automation rules")
             
-    db.automation_rules_db = rules
+    # Store rules as a dictionary keyed by ID to match database.py schema
+    db.automation_rules_db = {r["id"]: r for r in rules}
     return ResponseEnvelope.success(rules)
+
+@router.post("/automation-rules", response_model=ResponseEnvelope[Dict[str, Any]])
+def create_automation_rule(
+    rule: Dict[str, Any],
+    admin_user: UserPayload = Depends(require_admin)
+):
+    """Create a single automation rule."""
+    created = db.create_automation_rule({**rule, "created_by": admin_user.id})
+    return ResponseEnvelope.success(created)
+
+@router.patch("/automation-rules/{rule_id}", response_model=ResponseEnvelope[Dict[str, Any]])
+def patch_automation_rule(
+    rule_id: str,
+    updates: Dict[str, Any],
+    admin_user: UserPayload = Depends(require_admin)
+):
+    """Partially update (e.g., toggle enabled) a single automation rule."""
+    updated = db.update_automation_rule(rule_id, updates)
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "RULE_NOT_FOUND", "message": "Automation rule not found"}
+        )
+    return ResponseEnvelope.success(updated)
+
+@router.delete("/automation-rules/{rule_id}", response_model=ResponseEnvelope[Dict[str, Any]])
+def delete_automation_rule(
+    rule_id: str,
+    admin_user: UserPayload = Depends(require_admin)
+):
+    """Delete a single automation rule."""
+    ok = db.delete_automation_rule(rule_id)
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "RULE_NOT_FOUND", "message": "Automation rule not found"}
+        )
+    return ResponseEnvelope.success({"deleted": rule_id})

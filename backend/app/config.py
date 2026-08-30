@@ -30,4 +30,8 @@ class Settings:
     # Gemini AI Integration (Phase 3)
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 
+    # Email / Notification Integration (Priority 2)
+    RESEND_API_KEY: str = os.getenv("RESEND_API_KEY", "")
+    NOTIFY_FROM_EMAIL: str = os.getenv("NOTIFY_FROM_EMAIL", "notifications@bugzilla-modern.app")
+
 settings = Settings()

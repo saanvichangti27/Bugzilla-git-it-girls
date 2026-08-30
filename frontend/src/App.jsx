@@ -1,8 +1,19 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import BugList from './pages/BugList';
+import NotificationPreferences from './pages/NotificationPreferences';
+import AutomationRules from './pages/AutomationRules';
+import { authService } from './api/client';
+
+function AdminRoute({ children }) {
+  const user = authService.getCurrentUser();
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
 
 function App() {
   return (
@@ -13,8 +24,11 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="bugs" element={<BugList />} />
+          <Route path="notifications" element={<NotificationPreferences />} />
           <Route path="admin" element={
-            <div style={{color: 'var(--text-muted)'}}>Admin panel coming soon in Phase 2...</div>
+            <AdminRoute>
+              <AutomationRules />
+            </AdminRoute>
           } />
         </Route>
       </Routes>

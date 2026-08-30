@@ -102,3 +102,63 @@ export const bugService = {
     return response.data;
   }
 };
+
+export const notificationService = {
+  list: async (unreadOnly = false) => {
+    const res = await api.get(`/notifications${unreadOnly ? '?unread_only=true' : ''}`);
+    return res.data;
+  },
+  count: async () => {
+    const res = await api.get('/notifications/count');
+    return res.data;
+  },
+  markRead: async (id) => {
+    const res = await api.patch(`/notifications/${id}/read`);
+    return res.data;
+  },
+  markAllRead: async () => {
+    const res = await api.patch('/notifications/read-all');
+    return res.data;
+  },
+  getPreferences: async () => {
+    const res = await api.get('/notifications/preferences');
+    return res.data;
+  },
+  updatePreferences: async (preferences) => {
+    const res = await api.put('/notifications/preferences', { preferences });
+    return res.data;
+  },
+};
+
+export const automationService = {
+  listRules: async () => {
+    const res = await api.get('/admin/automation-rules');
+    return res.data;
+  },
+  createRule: async (rule) => {
+    const res = await api.post('/admin/automation-rules', rule);
+    return res.data;
+  },
+  toggleRule: async (ruleId, enabled) => {
+    const res = await api.patch(`/admin/automation-rules/${ruleId}`, { enabled });
+    return res.data;
+  },
+  deleteRule: async (ruleId) => {
+    const res = await api.delete(`/admin/automation-rules/${ruleId}`);
+    return res.data;
+  },
+  getLogs: async (ruleId) => {
+    const destination = ruleId ? `automation_rule:${ruleId}` : undefined;
+    const params = destination ? `?destination=${encodeURIComponent(destination)}` : '';
+    const res = await api.get(`/webhook-logs${params}`);
+    return res.data;
+  },
+};
+
+export const userService = {
+  list: async (search) => {
+    const params = search ? `?search=${encodeURIComponent(search)}` : '';
+    const res = await api.get(`/users${params}`);
+    return res.data;
+  },
+};

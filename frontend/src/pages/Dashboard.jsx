@@ -26,6 +26,9 @@ export default function Dashboard() {
     component: 'frontend',
   });
 
+  const [discordUsername, setDiscordUsername] = useState('');
+  const [savingDiscord, setSavingDiscord] = useState(false);
+
   // ---------------------------------------------------------------------------
   // Data fetching
   // ---------------------------------------------------------------------------
@@ -112,16 +115,16 @@ export default function Dashboard() {
     <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
       <h3 style={{ marginTop: 0, marginBottom: '1.5rem' }}>Report New Bug</h3>
       <form onSubmit={handleCreateBug} style={{ display: 'grid', gap: '1rem' }}>
-        <input className="input-field" placeholder="Bug Title" value={newBug.title} onChange={e => setNewBug({...newBug, title: e.target.value})} required />
-        <textarea className="input-field" placeholder="Description" rows={3} value={newBug.description} onChange={e => setNewBug({...newBug, description: e.target.value})} required />
+        <input className="input-field" placeholder="Bug Title" value={newBug.title} onChange={e => setNewBug({ ...newBug, title: e.target.value })} required />
+        <textarea className="input-field" placeholder="Description" rows={3} value={newBug.description} onChange={e => setNewBug({ ...newBug, description: e.target.value })} required />
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <select className="input-field" value={newBug.priority} onChange={e => setNewBug({...newBug, priority: e.target.value})} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
+          <select className="input-field" value={newBug.priority} onChange={e => setNewBug({ ...newBug, priority: e.target.value })} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
             <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option>
           </select>
-          <select className="input-field" value={newBug.severity} onChange={e => setNewBug({...newBug, severity: e.target.value})} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
+          <select className="input-field" value={newBug.severity} onChange={e => setNewBug({ ...newBug, severity: e.target.value })} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
             <option value="trivial">Trivial</option><option value="minor">Minor</option><option value="major">Major</option><option value="critical">Critical</option><option value="blocker">Blocker</option>
           </select>
-          <select className="input-field" value={newBug.component} onChange={e => setNewBug({...newBug, component: e.target.value})} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
+          <select className="input-field" value={newBug.component} onChange={e => setNewBug({ ...newBug, component: e.target.value })} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
             {COMPONENTS.map(c => (
               <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
             ))}
@@ -282,12 +285,53 @@ export default function Dashboard() {
   if (role === 'admin') return <AdminDashboard />;
   if (role === 'tester') return <TesterDashboard />;
 
+  const handleSaveDiscord = async () => {
+    setSavingDiscord(true);
+    try {
+      await api.patch('/users/me', { discord_username: discordUsername });
+      alert('Discord username linked successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save Discord username.');
+    } finally {
+      setSavingDiscord(false);
+    }
+  };
+
+  const renderDiscordIntegration = () => (
+    <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      <div>
+        <h3 style={{ margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ color: '#5865F2' }}>Discord</span> Integration
+        </h3>
+        <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+          Join the server and link your username to get pinged on critical bugs!
+        </p>
+      </div>
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <input
+          className="input-field"
+          placeholder="Username (e.g. siri#1234)"
+          value={discordUsername}
+          onChange={e => setDiscordUsername(e.target.value)}
+          style={{ width: '220px', marginBottom: 0 }}
+        />
+        <button className="btn btn-primary" onClick={handleSaveDiscord} disabled={savingDiscord}>
+          {savingDiscord ? 'Saving...' : 'Link Username'}
+        </button>
+        <a href="https://discord.gg/C5mfpcTnpV" target="_blank" rel="noopener noreferrer" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: '#5865F2', color: '#5865F2' }}>
+          Join Server
+        </a>
+      </div>
+    </div>
+  );
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <div>
           <h1 className="text-gradient">Dashboard Overview</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Role: <strong style={{textTransform: 'capitalize'}}>{role}</strong></p>
+          <p style={{ color: 'var(--text-muted)' }}>Role: <strong style={{ textTransform: 'capitalize' }}>{role}</strong></p>
         </div>
         {!showCreateForm && (
           <button className="btn btn-primary" onClick={() => setShowCreateForm(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -300,6 +344,7 @@ export default function Dashboard() {
         <div style={{ color: 'var(--text-muted)' }}>Loading...</div>
       ) : (
         <>
+          {renderDiscordIntegration()}
           {showCreateForm && renderCreateForm()}
 
           {role === 'reporter' ? (

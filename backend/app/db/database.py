@@ -486,6 +486,20 @@ class Database:
             return self.users_db[user_id]
         return None
 
+    def update_user_discord(self, user_id: str, discord_username: str) -> Optional[dict]:
+        if self.use_supabase:
+            try:
+                res = self.client.table("users").update({"discord_username": discord_username}).eq("id", user_id).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as e:
+                print(f"[SUPABASE ERROR] update_user_discord failed: {e}. Falling back to memory.")
+        
+        if user_id in self.users_db:
+            self.users_db[user_id]["discord_username"] = discord_username
+            return self.users_db[user_id]
+        return None
+
     # --- DASHBOARD METHODS ---
     def get_dashboard_summary(self, user_id: str) -> dict:
         now = datetime.now(timezone.utc)

@@ -10,6 +10,8 @@ class Settings:
     JWT_SECRET: str = os.getenv("JWT_SECRET", "super-secret-jwt-key-for-dev")
     API_PREFIX: str = "/api/v1"
     DISCORD_WEBHOOK_URL: str = os.getenv("DISCORD_WEBHOOK_URL", "")
+    DISCORD_CREATED_WEBHOOK_URL: str = os.getenv("DISCORD_CREATED_WEBHOOK_URL", "")
+    DISCORD_RESOLVED_WEBHOOK_URL: str = os.getenv("DISCORD_RESOLVED_WEBHOOK_URL", "")
 
 
 settings = Settings()

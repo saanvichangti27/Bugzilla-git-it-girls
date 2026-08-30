@@ -1,3 +1,6 @@
+import Card from './Card';
+import Skeleton from './Skeleton';
+
 export default function Table({
   columns = [],
   data = [],
@@ -9,7 +12,7 @@ export default function Table({
   style = {},
 }) {
   return (
-    <div className={`glass-panel ${className}`} style={{ overflow: 'hidden', ...style }}>
+    <Card className={className} style={{ padding: 0, overflow: 'hidden', ...style }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 'var(--text-sm)' }}>
         <thead>
           <tr style={{ background: 'rgba(255, 255, 255, 0.02)', borderBottom: '1px solid var(--border)' }}>
@@ -35,9 +38,11 @@ export default function Table({
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={columns.length || 1} style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                  Loading data...
+              <td colSpan={columns.length || 1} style={{ padding: '2.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <Skeleton height="40px" />
+                  <Skeleton height="40px" />
+                  <Skeleton height="40px" />
                 </div>
               </td>
             </tr>
@@ -79,6 +84,6 @@ export default function Table({
           )}
         </tbody>
       </table>
-    </div>
+    </Card>
   );
 }

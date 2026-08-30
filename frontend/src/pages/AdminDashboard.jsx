@@ -7,6 +7,8 @@ import {
 } from 'recharts';
 import Table from '../components/ui/Table';
 import Badge from '../components/ui/Badge';
+import Card from '../components/ui/Card';
+import Skeleton from '../components/ui/Skeleton';
 import PermissionsManager from '../components/PermissionsManager';
 
 export default function AdminDashboard() {
@@ -73,11 +75,23 @@ export default function AdminDashboard() {
       
       {activeTab === 'analytics' && (
         loading ? (
-          <div style={{ color: 'var(--text-muted)' }}>Loading system data...</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+              <Skeleton height="100px" />
+              <Skeleton height="100px" />
+              <Skeleton height="100px" />
+              <Skeleton height="100px" />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
+              <Skeleton height="350px" />
+              <Skeleton height="350px" />
+            </div>
+            <Skeleton height="300px" />
+          </div>
         ) : (
           <>
           <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '2rem' }}>
-            <div className="glass-card">
+            <Card>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <div className="metric-title">Total Open Bugs</div>
@@ -87,9 +101,9 @@ export default function AdminDashboard() {
                   <Activity size={24} />
                 </div>
               </div>
-            </div>
+            </Card>
 
-            <div className="glass-card">
+            <Card>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <div className="metric-title">Critical Bugs</div>
@@ -99,9 +113,9 @@ export default function AdminDashboard() {
                   <AlertTriangle size={24} />
                 </div>
               </div>
-            </div>
+            </Card>
             
-            <div className="glass-card">
+            <Card>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <div className="metric-title">Avg Resolution (hrs)</div>
@@ -111,9 +125,9 @@ export default function AdminDashboard() {
                   <Clock size={24} />
                 </div>
               </div>
-            </div>
+            </Card>
 
-            <div className="glass-card">
+            <Card>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <div className="metric-title">Webhook Success</div>
@@ -123,13 +137,12 @@ export default function AdminDashboard() {
                   <Webhook size={24} />
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
-            <div className="glass-panel" style={{ padding: '1.5rem' }}>
-              <h3 style={{ margin: 0, marginBottom: '1.5rem', color: 'var(--text-main)' }}>Bugs Opened vs Resolved (Last 7 Days)</h3>
-              <div style={{ width: '100%', height: 300 }}>
+            <Card title="Bugs Opened vs Resolved (Last 7 Days)">
+              <div style={{ width: '100%', height: 300, marginTop: '1.5rem' }}>
                 <ResponsiveContainer>
                   <LineChart data={stats.trend} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -144,11 +157,10 @@ export default function AdminDashboard() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-            </div>
+            </Card>
 
-            <div className="glass-panel" style={{ padding: '1.5rem' }}>
-              <h3 style={{ margin: 0, marginBottom: '1.5rem', color: 'var(--text-main)' }}>Bugs by Component</h3>
-              <div style={{ width: '100%', height: 300 }}>
+            <Card title="Bugs by Component">
+              <div style={{ width: '100%', height: 300, marginTop: '1.5rem' }}>
                 <ResponsiveContainer>
                   <BarChart data={stats.bugs_by_component} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -163,22 +175,23 @@ export default function AdminDashboard() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </div>
+            </Card>
           </div>
           
-          <div className="glass-panel" style={{ padding: '2rem' }}>
-            <h3 style={{ margin: 0, marginBottom: '1rem' }}>Global Bug Log</h3>
-            <Table
-              data={bugs}
-              columns={[
-                { header: 'Title', accessor: 'title' },
-                { header: 'Status', accessor: row => <Badge status={row.status} /> },
-                { header: 'Severity', accessor: 'severity' },
-                { header: 'Created', accessor: row => new Date(row.created_at).toLocaleDateString() }
-              ]}
-              emptyMessage="No bugs found in the system."
-            />
-          </div>
+          <Card title="Global Bug Log">
+            <div style={{ marginTop: '1rem' }}>
+              <Table
+                data={bugs}
+                columns={[
+                  { header: 'Title', accessor: 'title' },
+                  { header: 'Status', accessor: row => <Badge status={row.status} /> },
+                  { header: 'Severity', accessor: 'severity' },
+                  { header: 'Created', accessor: row => new Date(row.created_at).toLocaleDateString() }
+                ]}
+                emptyMessage="No bugs found in the system."
+              />
+            </div>
+          </Card>
         </>
         )
       )}

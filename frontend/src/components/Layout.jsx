@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Navigate, NavLink, useNavigate } from 'react-router-dom';
 import { authService, notificationService } from '../api/client';
-import { LayoutDashboard, Bug, LogOut, Settings, Bell, Zap } from 'lucide-react';
+import { LayoutDashboard, Bug, LogOut, Settings, Bell, Zap, Search } from 'lucide-react';
+import CommandPalette from './CommandPalette';
 
 export default function Layout() {
   const user = authService.getCurrentUser();
@@ -88,7 +89,7 @@ export default function Layout() {
             <span className="user-name">{user.name}</span>
             <span className="user-role">{user.role}</span>
           </div>
-          <button onClick={handleLogout} className="btn btn-outline" style={{ padding: '0.4rem', border: 'none' }} title="Logout">
+          <button onClick={handleLogout} className="btn btn-outline" style={{ padding: '0.4rem', border: 'none' }} title="Logout" aria-label="Logout">
             <LogOut size={18} />
           </button>
         </div>
@@ -96,8 +97,27 @@ export default function Layout() {
 
       {/* Main Content Area */}
       <main className="main-content">
-        <Outlet />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem', borderBottom: '1px solid var(--border)' }}>
+          <button 
+            className="btn btn-outline" 
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: '0.5rem', 
+              color: 'var(--text-muted)', background: 'var(--bg-surface)', 
+              borderColor: 'var(--border)' 
+            }}
+            onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+            aria-label="Open Command Palette"
+          >
+            <Search size={16} />
+            <span style={{ fontSize: '0.9rem' }}>Search or jump to...</span>
+            <kbd style={{ marginLeft: '0.5rem', background: 'var(--bg-base)', padding: '0.1rem 0.3rem', borderRadius: '4px', fontSize: '0.8rem' }}>⌘K</kbd>
+          </button>
+        </div>
+        <div style={{ padding: '2rem' }}>
+          <Outlet />
+        </div>
       </main>
+      <CommandPalette />
     </div>
   );
 }

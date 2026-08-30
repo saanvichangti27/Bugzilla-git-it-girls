@@ -4,6 +4,11 @@ import { ShieldCheck, Bug, CheckCircle, Plus, FlaskConical, RotateCcw, CheckCirc
 import AddBugModal from '../components/AddBugModal';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
+import Card from '../components/ui/Card';
+import Skeleton from '../components/ui/Skeleton';
+import EmptyState from '../components/ui/EmptyState';
+import Table from '../components/ui/Table';
+import { useToast } from '../contexts/ToastContext';
 
 export default function TesterDashboard() {
   const user = authService.getCurrentUser();
@@ -11,6 +16,7 @@ export default function TesterDashboard() {
   const [resolvedBugs, setResolvedBugs] = useState([]); // all bugs with status=resolved
   const [reportedBugs, setReportedBugs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const toast = useToast();
 
   // New bug modal state
   const [showNewBugForm, setShowNewBugForm] = useState(false);
@@ -50,7 +56,7 @@ export default function TesterDashboard() {
       }
     } catch (err) {
       console.error('AI summarize failed', err);
-      alert('AI summarization failed. Please try again.');
+      toast('AI summarization failed. Please try again.', 'error');
     } finally {
       setSummarizingId(null);
     }
@@ -69,7 +75,7 @@ export default function TesterDashboard() {
       fetchData();
     } catch (err) {
       console.error("Failed to mark as fixed", err);
-      alert(err.response?.data?.detail?.message || err.response?.data?.error?.message || "Failed to mark as fixed");
+      toast(err.response?.data?.detail?.message || err.response?.data?.error?.message || "Failed to mark as fixed", 'error');
       fetchData(); // revert
     }
   };
@@ -82,12 +88,22 @@ export default function TesterDashboard() {
       fetchData();
     } catch (err) {
       console.error("Failed to send back", err);
-      alert(err.response?.data?.detail?.message || err.response?.data?.error?.message || "Failed to send back");
+      toast(err.response?.data?.detail?.message || err.response?.data?.error?.message || "Failed to send back", 'error');
       fetchData();
     }
   };
 
-  if (loading) return <div style={{ color: 'var(--text-muted)' }}>Loading tester dashboard...</div>;
+  if (loading) return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <div className="dashboard-grid">
+        <Skeleton height="100px" />
+        <Skeleton height="100px" />
+        <Skeleton height="100px" />
+      </div>
+      <Skeleton height="300px" />
+      <Skeleton height="300px" />
+    </div>
+  );
 
   return (
     <div>
@@ -110,22 +126,22 @@ export default function TesterDashboard() {
 
       {/* Metric Cards */}
       <div className="dashboard-grid" style={{ marginBottom: '2rem' }}>
-        <div className="glass-card">
+        <Card>
           <div className="metric-title">Being Tested</div>
           <div className="metric-value" style={{ color: '#22d3ee' }}>{readyBugs.length}</div>
-        </div>
-        <div className="glass-card">
+        </Card>
+        <Card>
           <div className="metric-title">Verified & Resolved</div>
           <div className="metric-value" style={{ color: '#34d399' }}>{resolvedBugs.length}</div>
-        </div>
-        <div className="glass-card">
+        </Card>
+        <Card>
           <div className="metric-title">Reported by Me</div>
           <div className="metric-value">{reportedBugs.length}</div>
-        </div>
+        </Card>
       </div>
 
       {/* ── Being Tested queue ── */}
-      <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
+      <Card style={{ marginBottom: '2rem' }}>
         <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 0.5rem 0' }}>
           <FlaskConical size={20} color="#22d3ee" />
           <span style={{ color: '#22d3ee' }}>Being Tested</span>
@@ -139,12 +155,11 @@ export default function TesterDashboard() {
         </p>
 
         {readyBugs.length === 0 ? (
-          <div style={{
-            color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center',
-            padding: '2rem', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)'
-          }}>
-            No bugs in the testing queue right now. 🎉
-          </div>
+          <EmptyState 
+            title="No bugs to test" 
+            description="There are no bugs in the testing queue right now. 🎉" 
+            icon={<FlaskConical size={48} color="var(--text-muted)" />} 
+          />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {readyBugs.map(bug => (
@@ -211,10 +226,10 @@ export default function TesterDashboard() {
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* ── Verified & Resolved bugs ── */}
-      <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
+      <Card style={{ marginBottom: '2rem' }}>
         <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 0.5rem 0' }}>
           <CheckCircle2 size={20} color="#34d399" />
           <span style={{ color: '#34d399' }}>Resolved Bugs</span>
@@ -228,12 +243,11 @@ export default function TesterDashboard() {
         </p>
 
         {resolvedBugs.length === 0 ? (
-          <div style={{
-            color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center',
-            padding: '2rem', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)'
-          }}>
-            No resolved bugs recorded yet.
-          </div>
+          <EmptyState 
+            title="No resolved bugs" 
+            description="No resolved bugs recorded yet." 
+            icon={<CheckCircle2 size={48} color="var(--text-muted)" />} 
+          />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {resolvedBugs.map(bug => (
@@ -260,16 +274,20 @@ export default function TesterDashboard() {
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* ── Reported bugs (read-only) ── */}
-      <div className="glass-panel" style={{ padding: '1.5rem' }}>
+      <Card>
         <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 1rem 0' }}>
           <Bug size={20} color="var(--danger)" /> Bugs I Reported
         </h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {reportedBugs.length === 0 ? (
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>You haven't reported any bugs yet.</div>
+            <EmptyState 
+              title="No reported bugs" 
+              description="You haven't reported any bugs yet." 
+              icon={<Bug size={48} color="var(--text-muted)" />} 
+            />
           ) : (
             reportedBugs.map(bug => (
               <div key={bug.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -330,7 +348,7 @@ export default function TesterDashboard() {
             ))
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

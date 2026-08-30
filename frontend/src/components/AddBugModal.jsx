@@ -3,6 +3,11 @@ import { bugService, aiService, api } from '../api/client';
 import { Search, Upload, X, FileText, Image as ImageIcon, Sparkles, Loader2, CheckCircle2, UserCheck, UserPlus, ArrowRight, ArrowLeft } from 'lucide-react';
 import Button from './ui/Button';
 import Badge from './ui/Badge';
+import Modal from './ui/Modal';
+import Input from './ui/Input';
+import Select from './ui/Select';
+import Textarea from './ui/Textarea';
+import { useToast } from '../contexts/ToastContext';
 
 export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
   const [step, setStep] = useState(1);
@@ -27,6 +32,7 @@ export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
 
   if (!isOpen) return null;
 
@@ -60,14 +66,13 @@ export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
     try {
       if (isFollowing) {
         await bugService.unfollowBug(bugId);
-        setFollowingMap(prev => ({ ...prev, [bugId]: false }));
       } else {
         await bugService.followBug(bugId);
-        setFollowingMap(prev => ({ ...prev, [bugId]: true }));
       }
+      setFollowingMap({ ...followingMap, [bugId]: !isFollowing });
     } catch (err) {
       console.error("Failed to update follow status", err);
-      alert("Failed to update follow status.");
+      toast("Failed to update follow status", 'error');
     }
   };
 
@@ -94,8 +99,8 @@ export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
         }
       }
     } catch (err) {
-      console.error("File upload failed", err);
-      alert("File upload failed. Please try again.");
+      console.error('File upload failed', err);
+      toast('Failed to upload file.', 'error');
     } finally {
       setUploadingFile(false);
     }
@@ -124,7 +129,8 @@ export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
         }));
       }
     } catch (err) {
-      console.error("AI suggest failed", err);
+      console.error("AI autocomplete failed", err);
+      toast("AI autocomplete failed", 'error');
     } finally {
       setAiSuggesting(false);
     }
@@ -169,9 +175,10 @@ export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
       setSimilarBugs([]);
       setHasSearched(false);
       setAttachments([]);
+      toast("Bug reported successfully!", "success");
     } catch (err) {
       console.error("Failed to submit bug", err);
-      alert(err.response?.data?.detail?.message || err.response?.data?.error?.message || "Failed to create bug.");
+      toast(err.response?.data?.detail?.message || err.response?.data?.error?.message || "Failed to create bug.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -179,31 +186,19 @@ export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
 
   const API_BASE = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api/v1', '') : 'http://127.0.0.1:8000';
 
+  const modalTitle = (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        Bugzilla Bug Reporter
+      </div>
+      <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+        {step === 1 ? 'Step 1: Check for similar existing issues' : 'Step 2: Enter detailed issue description & attachments'}
+      </p>
+    </div>
+  );
+
   return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(6px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem'
-    }}>
-      <div className="glass-panel" style={{
-        width: '100%', maxWidth: '850px', maxHeight: '90vh', overflowY: 'auto',
-        borderRadius: '16px', padding: '2rem', border: '1px solid rgba(255, 255, 255, 0.15)',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.5)', background: '#121624', color: '#f3f4f6'
-      }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', pb: '1rem' }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              Bugzilla Bug Reporter
-            </h2>
-            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              {step === 1 ? 'Step 1: Check for similar existing issues' : 'Step 2: Enter detailed issue description & attachments'}
-            </p>
-          </div>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer' }}>
-            <X size={20} />
-          </button>
-        </div>
+    <Modal isOpen={isOpen} onClose={onClose} title={modalTitle} maxWidth="850px">
 
         {/* STEP 1: FIND SIMILAR ISSUES */}
         {step === 1 && (
@@ -213,19 +208,18 @@ export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
                 Summarize your issue or request in one sentence:
               </h3>
               <form onSubmit={handleSearchSimilar} style={{ display: 'flex', gap: '0.5rem', maxWidth: '650px', margin: '0 auto' }}>
-                <input
+                <Input
                   type="text"
-                  className="input-field"
                   placeholder="e.g. login page issue or dropdown unresponsive..."
                   value={summaryQuery}
                   onChange={(e) => setSummaryQuery(e.target.value)}
                   style={{ flex: 1, padding: '0.75rem 1rem', fontSize: '0.95rem' }}
                   required
                 />
-                <button type="submit" className="btn btn-primary" disabled={searchingSimilar} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}>
+                <Button type="submit" variant="primary" disabled={searchingSimilar} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}>
                   {searchingSimilar ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Search size={16} />}
                   Find similar issues
-                </button>
+                </Button>
               </form>
             </div>
 
@@ -264,25 +258,15 @@ export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
                               </span>
                             </td>
                             <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
-                              <button
+                              <Button
                                 type="button"
+                                size="sm"
+                                variant={followingMap[bug.id] ? 'danger' : 'primary'}
                                 onClick={() => handleToggleFollow(bug.id)}
-                                style={{
-                                  padding: '0.35rem 0.75rem', fontSize: '0.78rem', borderRadius: '6px',
-                                  fontWeight: 600, border: '1px solid', cursor: 'pointer',
-                                  display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                                  borderColor: followingMap[bug.id] ? 'rgba(239, 68, 68, 0.4)' : 'rgba(99, 102, 241, 0.4)',
-                                  background: followingMap[bug.id] ? 'rgba(239, 68, 68, 0.15)' : 'rgba(99, 102, 241, 0.15)',
-                                  color: followingMap[bug.id] ? '#f87171' : '#818cf8',
-                                  transition: 'all 0.2s ease'
-                                }}
+                                icon={followingMap[bug.id] ? <UserCheck size={14} /> : <UserPlus size={14} />}
                               >
-                                {followingMap[bug.id] ? (
-                                  <><UserCheck size={14} /> Stop following</>
-                                ) : (
-                                  <><UserPlus size={14} /> Follow bug</>
-                                )}
-                              </button>
+                                {followingMap[bug.id] ? 'Stop following' : 'Follow bug'}
+                              </Button>
                             </td>
                           </tr>
                         ))}
@@ -292,9 +276,9 @@ export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
                 ) : null}
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                  <button type="button" onClick={handleProceedToReport} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    Proceed to report bug <ArrowRight size={16} />
-                  </button>
+                  <Button variant="primary" onClick={() => setStep(2)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 auto' }}>
+                    None of these match, continue to Report <ArrowRight size={16} />
+                  </Button>
                 </div>
               </div>
             )}
@@ -306,13 +290,12 @@ export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
           <form onSubmit={handleSubmitBug} style={{ display: 'grid', gap: '1.25rem' }}>
             {/* Title / Summary */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem', color: '#d1d5db' }}>
-                Summary *
-              </label>
-              <input
-                className="input-field"
+              <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: '#d1d5db', fontWeight: 600 }}>Bug Title <span style={{ color: '#ef4444' }}>*</span></label>
+              <Input
+                type="text"
+                placeholder="Briefly describe the issue..."
                 value={bugForm.title}
-                onChange={e => setBugForm({ ...bugForm, title: e.target.value })}
+                onChange={(e) => setBugForm({ ...bugForm, title: e.target.value })}
                 required
               />
             </div>
@@ -320,43 +303,34 @@ export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
             {/* Structured reproduction sections */}
             <div style={{ display: 'grid', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.3rem', color: '#9ca3af' }}>
-                  What did you do? (steps to reproduce) *
-                </label>
-                <textarea
-                  className="input-field"
-                  rows={2}
-                  placeholder="1. Open page X... 2. Click button Y..."
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: '#d1d5db', fontWeight: 600 }}>Steps to Reproduce <span style={{ color: '#ef4444' }}>*</span></label>
+                <Textarea
+                  placeholder="1. Go to page X&#10;2. Click on Y&#10;3. See error Z"
                   value={bugForm.stepsToReproduce}
-                  onChange={e => setBugForm({ ...bugForm, stepsToReproduce: e.target.value })}
+                  onChange={(e) => setBugForm({ ...bugForm, stepsToReproduce: e.target.value })}
+                  rows={4}
                   required
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.3rem', color: '#9ca3af' }}>
-                  What happened? (actual results) *
-                </label>
-                <textarea
-                  className="input-field"
-                  rows={2}
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: '#d1d5db', fontWeight: 600 }}>What happened? (actual results) <span style={{ color: '#ef4444' }}>*</span></label>
+                <Textarea
                   placeholder="Expected login success, but button became unresponsive..."
                   value={bugForm.whatHappened}
-                  onChange={e => setBugForm({ ...bugForm, whatHappened: e.target.value })}
+                  onChange={(e) => setBugForm({ ...bugForm, whatHappened: e.target.value })}
+                  rows={3}
                   required
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.3rem', color: '#9ca3af' }}>
-                  What should have happened? (expected results) *
-                </label>
-                <textarea
-                  className="input-field"
-                  rows={2}
-                  placeholder="User should be redirected to dashboard after clicking login..."
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: '#d1d5db', fontWeight: 600 }}>What Should Happen? <span style={{ color: '#ef4444' }}>*</span></label>
+                <Textarea
+                  placeholder="Describe the expected correct behavior..."
                   value={bugForm.whatShouldHappen}
-                  onChange={e => setBugForm({ ...bugForm, whatShouldHappen: e.target.value })}
+                  onChange={(e) => setBugForm({ ...bugForm, whatShouldHappen: e.target.value })}
+                  rows={3}
                   required
                 />
               </div>
@@ -364,41 +338,58 @@ export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
 
             {/* AI Auto-fill & Component / Priority / Severity */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-              <button
+              <Button
                 type="button"
                 onClick={handleAutoSuggest}
                 disabled={aiSuggesting}
+                icon={aiSuggesting ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Sparkles size={14} />}
                 style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 1rem',
                   background: 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(99,102,241,0.25))',
-                  border: '1px solid rgba(139,92,246,0.4)', borderRadius: '6px',
-                  color: '#c084fc', cursor: aiSuggesting ? 'wait' : 'pointer', fontSize: '0.85rem', fontWeight: 600,
+                  border: '1px solid rgba(139,92,246,0.4)',
+                  color: '#c084fc',
                 }}
               >
-                {aiSuggesting ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Sparkles size={14} />}
                 Auto-suggest metadata with AI ✨
-              </button>
+              </Button>
 
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <select className="input-field" value={bugForm.priority} onChange={e => setBugForm({...bugForm, priority: e.target.value})} style={{ background: '#1e293b', color: '#fff', width: 'auto' }}>
-                  <option value="low">Low Priority</option>
-                  <option value="medium">Medium Priority</option>
-                  <option value="high">High Priority</option>
-                  <option value="critical">Critical Priority</option>
-                </select>
-                <select className="input-field" value={bugForm.severity} onChange={e => setBugForm({...bugForm, severity: e.target.value})} style={{ background: '#1e293b', color: '#fff', width: 'auto' }}>
-                  <option value="trivial">Trivial Severity</option>
-                  <option value="minor">Minor Severity</option>
-                  <option value="major">Major Severity</option>
-                  <option value="critical">Critical Severity</option>
-                  <option value="blocker">Blocker Severity</option>
-                </select>
-                <select className="input-field" value={bugForm.component} onChange={e => setBugForm({...bugForm, component: e.target.value})} style={{ background: '#1e293b', color: '#fff', width: 'auto' }}>
-                  <option value="frontend">Frontend</option>
-                  <option value="backend">Backend</option>
-                  <option value="database">Database</option>
-                  <option value="others">Others</option>
-                </select>
+                <div style={{ flex: '1 1 200px' }}>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: '#d1d5db', fontWeight: 600 }}>Priority</label>
+                  <Select
+                    value={bugForm.priority}
+                    onChange={(e) => setBugForm({ ...bugForm, priority: e.target.value })}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </Select>
+                </div>
+                
+                <div style={{ flex: '1 1 200px' }}>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: '#d1d5db', fontWeight: 600 }}>Severity</label>
+                  <Select
+                    value={bugForm.severity}
+                    onChange={(e) => setBugForm({ ...bugForm, severity: e.target.value })}
+                  >
+                    <option value="minor">Minor (UI/Cosmetic)</option>
+                    <option value="major">Major (Feature broken)</option>
+                    <option value="blocker">Blocker (System down)</option>
+                  </Select>
+                </div>
+
+                <div style={{ flex: '1 1 200px' }}>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: '#d1d5db', fontWeight: 600 }}>Component</label>
+                  <Select
+                    value={bugForm.component}
+                    onChange={(e) => setBugForm({ ...bugForm, component: e.target.value })}
+                  >
+                    <option value="frontend">Frontend</option>
+                    <option value="backend">Backend</option>
+                    <option value="database">Database</option>
+                    <option value="others">Others</option>
+                  </Select>
+                </div>
               </div>
             </div>
 
@@ -458,19 +449,18 @@ export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
 
             {/* Actions */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
-              <button type="button" className="btn btn-outline" onClick={() => setStep(1)} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <ArrowLeft size={16} /> Back to Similar Search
-              </button>
+              <Button type="button" variant="outline" onClick={() => setStep(1)} icon={<ArrowLeft size={16} />}>
+                Back to Similar Search
+              </Button>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                <Button type="submit" variant="primary" disabled={submitting}>
                   {submitting ? 'Submitting...' : 'Submit Bug'}
-                </button>
+                </Button>
               </div>
             </div>
           </form>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }

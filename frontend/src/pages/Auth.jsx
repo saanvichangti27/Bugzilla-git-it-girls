@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../api/client';
 import { Bug, LogIn, UserPlus } from 'lucide-react';
+import Input from '../components/ui/Input';
+import Select from '../components/ui/Select';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -33,7 +37,7 @@ export default function Auth() {
 
   return (
     <div className="auth-page">
-      <div className="auth-container glass-panel">
+      <Card className="auth-container">
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
             <div style={{ background: 'rgba(99, 102, 241, 0.2)', padding: '1rem', borderRadius: '50%', color: 'var(--primary)' }}>
@@ -53,63 +57,51 @@ export default function Auth() {
         <form onSubmit={handleSubmit}>
           {!isLogin && (
             <>
-              <div className="input-group">
-                <label>Full Name</label>
-                <input 
-                  type="text" 
-                  className="input-field" 
-                  placeholder="Jane Doe"
-                  value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                  required
-                />
-              </div>
+              <Input 
+                label="Full Name"
+                type="text" 
+                placeholder="Jane Doe"
+                value={formData.name}
+                onChange={e => setFormData({...formData, name: e.target.value})}
+                required
+              />
 
-              <div className="input-group">
-                <label>Role</label>
-                <select 
-                  className="input-field" 
-                  value={formData.role}
-                  onChange={e => setFormData({...formData, role: e.target.value})}
-                  required
-                  style={{ background: 'var(--bg-card)', color: 'var(--text)' }}
-                >
-                  <option value="reporter">Reporter</option>
-                  <option value="developer">Developer</option>
-                  <option value="tester">Tester</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
+              <Select 
+                label="Role"
+                value={formData.role}
+                onChange={e => setFormData({...formData, role: e.target.value})}
+                required
+                options={[
+                  { label: 'Reporter', value: 'reporter' },
+                  { label: 'Developer', value: 'developer' },
+                  { label: 'Tester', value: 'tester' },
+                  { label: 'Admin', value: 'admin' }
+                ]}
+              />
             </>
           )}
           
-          <div className="input-group">
-            <label>Email Address</label>
-            <input 
-              type="email" 
-              className="input-field" 
-              placeholder="you@example.com"
-              value={formData.email}
-              onChange={e => setFormData({...formData, email: e.target.value})}
-              required
-            />
-          </div>
+          <Input 
+            label="Email Address"
+            type="email" 
+            placeholder="you@example.com"
+            value={formData.email}
+            onChange={e => setFormData({...formData, email: e.target.value})}
+            required
+          />
           
-          <div className="input-group">
-            <label>Password</label>
-            <input 
-              type="password" 
-              className="input-field" 
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={e => setFormData({...formData, password: e.target.value})}
-              required
-            />
-          </div>
+          <Input 
+            label="Password"
+            type="password" 
+            placeholder="••••••••"
+            value={formData.password}
+            onChange={e => setFormData({...formData, password: e.target.value})}
+            required
+          />
           
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem', padding: '0.75rem' }}>
+          <Button type="submit" style={{ width: '100%', marginTop: '1rem', padding: '0.75rem' }}>
             {isLogin ? <><LogIn size={18} /> Sign In</> : <><UserPlus size={18} /> Create Account</>}
-          </button>
+          </Button>
         </form>
         
         <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
@@ -124,7 +116,7 @@ export default function Auth() {
             </a>
           </p>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

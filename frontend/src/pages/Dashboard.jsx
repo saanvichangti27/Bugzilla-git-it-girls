@@ -7,11 +7,16 @@ import AddBugModal from '../components/AddBugModal';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import Table from '../components/ui/Table';
+import Card from '../components/ui/Card';
+import Skeleton from '../components/ui/Skeleton';
+import EmptyState from '../components/ui/EmptyState';
+import { useToast } from '../contexts/ToastContext';
 
 // Hardcoded component list — no dedicated components-management endpoint yet
 const COMPONENTS = ["frontend", "backend", "database", "others"];
 
 export default function Dashboard() {
+  const toast = useToast();
   const [stats, setStats] = useState({ open_bugs: 0, assigned_to_me: 0, resolved_this_week: 0 });
   const [loading, setLoading] = useState(true);
   const [userBugs, setUserBugs] = useState([]);         // reporter: bugs they reported
@@ -144,9 +149,22 @@ export default function Dashboard() {
       }
     } catch (err) {
       console.error('AI summarize failed', err);
-      alert('AI summarization failed. Please try again.');
+      toast('AI summarization failed. Please try again.', 'error');
     } finally {
       setSummarizingId(null);
+    }
+  };
+
+  const handleSaveDiscord = async (e) => {
+    e.preventDefault();
+    setSavingDiscord(true);
+    try {
+      await api.patch('/users/me/discord', { discord_username: discordUsername });
+      toast('Discord username saved!', 'success');
+    } catch (err) {
+      toast('Failed to save Discord username', 'error');
+    } finally {
+      setSavingDiscord(false);
     }
   };
 
@@ -164,7 +182,7 @@ export default function Dashboard() {
     } catch (err) {
       console.error("Failed to mark bug as resolved", err);
       const msg = err.response?.data?.detail?.message || err.response?.data?.error?.message || "Failed to mark bug as resolved";
-      alert(msg);
+      toast(msg, 'error');
       fetchDashboardData(); // revert optimistic update
     }
   };
@@ -394,7 +412,7 @@ export default function Dashboard() {
   );
 
   const renderGithubSettings = () => (
-    <div className="glass-panel" style={{ padding: '2rem', marginTop: '2rem' }}>
+    <Card style={{ marginTop: '2rem' }}>
       <h3 style={{ marginTop: 0, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <Layers size={20} style={{ color: 'var(--primary)' }} />
         GitHub Integration Settings
@@ -412,11 +430,11 @@ export default function Dashboard() {
         <input className="input-field" placeholder="Target Repository (e.g. octocat/Hello-World)" value={githubSettings.github_repo} onChange={e => setGithubSettings({...githubSettings, github_repo: e.target.value})} />
         
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem' }}>
-          <button type="submit" className="btn btn-primary">Save & Configure Webhooks</button>
+          <Button type="submit" variant="primary">Save & Configure Webhooks</Button>
           {githubStatus && <span style={{ fontSize: '0.85rem', color: githubStatus.includes('Failed') ? '#ef4444' : '#10b981' }}>{githubStatus}</span>}
         </div>
       </form>
-    </div>
+    </Card>
   );
 
   // ---------------------------------------------------------------------------
@@ -425,45 +443,34 @@ export default function Dashboard() {
   if (role === 'admin') return <AdminDashboard />;
   if (role === 'tester') return <TesterDashboard />;
 
-  const handleSaveDiscord = async () => {
-    setSavingDiscord(true);
-    try {
-      await api.patch('/users/me', { discord_username: discordUsername });
-      alert('Discord username linked successfully!');
-    } catch (err) {
-      console.error(err);
-      alert('Failed to save Discord username.');
-    } finally {
-      setSavingDiscord(false);
-    }
-  };
-
   const renderDiscordIntegration = () => (
-    <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-      <div>
-        <h3 style={{ margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ color: '#5865F2' }}>Discord</span> Integration
-        </h3>
-        <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          Join the server and link your username to get pinged on critical bugs!
-        </p>
+    <Card style={{ marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h3 style={{ margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ color: '#5865F2' }}>Discord</span> Integration
+          </h3>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            Join the server and link your username to get pinged on critical bugs!
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <input
+            className="input-field"
+            placeholder="Username (e.g. siri#1234)"
+            value={discordUsername}
+            onChange={e => setDiscordUsername(e.target.value)}
+            style={{ width: '220px', marginBottom: 0 }}
+          />
+          <Button variant="primary" onClick={handleSaveDiscord} disabled={savingDiscord}>
+            {savingDiscord ? 'Saving...' : 'Link Username'}
+          </Button>
+          <a href="https://discord.gg/C5mfpcTnpV" target="_blank" rel="noopener noreferrer" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: '#5865F2', color: '#5865F2' }}>
+            Join Server
+          </a>
+        </div>
       </div>
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <input
-          className="input-field"
-          placeholder="Username (e.g. siri#1234)"
-          value={discordUsername}
-          onChange={e => setDiscordUsername(e.target.value)}
-          style={{ width: '220px', marginBottom: 0 }}
-        />
-        <button className="btn btn-primary" onClick={handleSaveDiscord} disabled={savingDiscord}>
-          {savingDiscord ? 'Saving...' : 'Link Username'}
-        </button>
-        <a href="https://discord.gg/C5mfpcTnpV" target="_blank" rel="noopener noreferrer" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: '#5865F2', color: '#5865F2' }}>
-          Join Server
-        </a>
-      </div>
-    </div>
+    </Card>
   );
 
   return (
@@ -474,14 +481,22 @@ export default function Dashboard() {
           <p style={{ color: 'var(--text-muted)' }}>Role: <strong style={{ textTransform: 'capitalize' }}>{role}</strong></p>
         </div>
         {!showCreateForm && (
-          <button className="btn btn-primary" onClick={() => setShowCreateForm(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <PlusCircle size={18} /> Report New Bug
-          </button>
+          <Button variant="primary" onClick={() => setShowCreateForm(true)} icon={<PlusCircle size={18} />}>
+            Report New Bug
+          </Button>
         )}
       </div>
 
       {loading ? (
-        <div style={{ color: 'var(--text-muted)' }}>Loading...</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <div className="dashboard-grid">
+            <Skeleton height="100px" />
+            <Skeleton height="100px" />
+            <Skeleton height="100px" />
+          </div>
+          <Skeleton height="300px" />
+          <Skeleton height="300px" />
+        </div>
       ) : (
         <>
           {renderDiscordIntegration()}
@@ -496,7 +511,7 @@ export default function Dashboard() {
             <>
               {/* ── Metric cards ── */}
               <div className="dashboard-grid" style={{ marginBottom: '2rem' }}>
-                <div className="glass-card">
+                <Card>
                   <div className="metric-title">
                     Active Bugs {selectedComponent
                       ? `(${selectedComponent})`
@@ -505,17 +520,17 @@ export default function Dashboard() {
                   <div className="metric-value">
                     {displayedBugs.filter(b => b.status === 'new' || b.status === 'in_progress').length}
                   </div>
-                </div>
-                <div className="glass-card">
+                </Card>
+                <Card>
                   <div className="metric-title">Being Tested</div>
                   <div className="metric-value" style={{ color: '#22d3ee' }}>
                     {displayedBugs.filter(b => b.status === 'ready_for_testing').length}
                   </div>
-                </div>
-                <div className="glass-card">
+                </Card>
+                <Card>
                   <div className="metric-title">Resolved This Week</div>
                   <div className="metric-value">{stats.resolved_this_week}</div>
-                </div>
+                </Card>
               </div>
 
               {/* ── Bug list with component filter ── */}

@@ -61,6 +61,12 @@ class BugListResponse(BaseModel):
     page_size: int
     total: int
 
+class PossibleDuplicate(BaseModel):
+    bug_id: str
+    title: Optional[str] = None
+    reason: str
+
+
 class BugResponse(BaseModel):
     id: str
     title: str
@@ -77,3 +83,17 @@ class BugResponse(BaseModel):
     github_issue_url: Optional[str] = None
     ai_summary: Optional[str] = None
     ai_summary_generated_at: Optional[datetime] = None
+    possible_duplicate: Optional[PossibleDuplicate] = None
+
+class SuggestFieldsRequest(BaseModel):
+    title: str = Field(..., min_length=1)
+    description: str = Field(..., min_length=1)
+
+class SuggestFieldsResponse(BaseModel):
+    component: str
+    priority: PriorityEnum
+    severity: SeverityEnum
+
+class SummarizeResponse(BaseModel):
+    ai_summary: str
+    generated_at: datetime

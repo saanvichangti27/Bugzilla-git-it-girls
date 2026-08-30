@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.config import settings
-from app.routers import bugs, comments, events, webhook_logs, auth, users, dashboard, webhooks
+from app.routers import bugs, comments, events, webhook_logs, auth, users, dashboard, webhooks, github_webhook
 from app.services.dispatcher import start_dispatcher
 
 @asynccontextmanager
@@ -101,3 +101,6 @@ app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(users.router, prefix=settings.API_PREFIX)
 app.include_router(dashboard.router, prefix=settings.API_PREFIX)
 app.include_router(webhooks.router, prefix=settings.API_PREFIX)
+
+# GitHub webhook — no /api/v1 prefix, no JWT auth (GitHub calls this directly)
+app.include_router(github_webhook.router)

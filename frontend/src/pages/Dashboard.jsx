@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { api, authService } from '../api/client';
-import { PlusCircle, CheckCheck, Layers, FlaskConical } from 'lucide-react';
+import { api, authService, aiService } from '../api/client';
+import { PlusCircle, CheckCheck, Layers, FlaskConical, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import TesterDashboard from './TesterDashboard';
 
@@ -14,6 +14,12 @@ export default function Dashboard() {
   const [openBugs, setOpenBugs] = useState([]);          // developer: active bugs (new + in_progress + ready_for_testing)
   const [selectedComponent, setSelectedComponent] = useState(null); // null = "All"
   const [showCreateForm, setShowCreateForm] = useState(false);
+
+  // AI state
+  const [aiSuggesting, setAiSuggesting] = useState(false);
+  const [duplicateWarnings, setDuplicateWarnings] = useState({}); // { [bugId]: { title, reason, bug_id } }
+  const [summarizingId, setSummarizingId] = useState(null);
+  const [summaries, setSummaries] = useState({}); // { [bugId]: { text, generatedAt } }
 
   const user = authService.getCurrentUser();
   const role = user?.role || 'reporter';
@@ -82,15 +88,60 @@ export default function Dashboard() {
   // ---------------------------------------------------------------------------
   // Actions
   // ---------------------------------------------------------------------------
+  const handleAutoSuggest = async () => {
+    if (!newBug.title || !newBug.description) {
+      alert('Please enter a title and description first.');
+      return;
+    }
+    setAiSuggesting(true);
+    try {
+      const res = await aiService.suggestFields(newBug.title, newBug.description);
+      if (res?.data) {
+        setNewBug(prev => ({
+          ...prev,
+          component: res.data.component || prev.component,
+          priority: res.data.priority || prev.priority,
+          severity: res.data.severity || prev.severity,
+        }));
+      }
+    } catch (err) {
+      console.error('AI suggest failed', err);
+    } finally {
+      setAiSuggesting(false);
+    }
+  };
+
   const handleCreateBug = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/bugs', newBug);
+      const res = await api.post('/bugs', newBug);
+      const bugData = res.data?.data;
+      if (bugData?.possible_duplicate && bugData?.id) {
+        setDuplicateWarnings(prev => ({
+          ...prev,
+          [bugData.id]: bugData.possible_duplicate
+        }));
+      }
       setShowCreateForm(false);
       setNewBug({ title: '', description: '', priority: 'medium', severity: 'minor', component: 'frontend' });
       fetchDashboardData();
     } catch (err) {
       console.error("Failed to create bug", err);
+    }
+  };
+
+  const handleSummarizeBug = async (bugId) => {
+    setSummarizingId(bugId);
+    try {
+      const res = await aiService.summarizeBug(bugId);
+      if (res?.data) {
+        setSummaries(prev => ({ ...prev, [bugId]: { text: res.data.ai_summary, generatedAt: res.data.generated_at } }));
+      }
+    } catch (err) {
+      console.error('AI summarize failed', err);
+      alert('AI summarization failed. Please try again.');
+    } finally {
+      setSummarizingId(null);
     }
   };
 
@@ -135,8 +186,26 @@ export default function Dashboard() {
     <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
       <h3 style={{ marginTop: 0, marginBottom: '1.5rem' }}>Report New Bug</h3>
       <form onSubmit={handleCreateBug} style={{ display: 'grid', gap: '1rem' }}>
-        <input className="input-field" placeholder="Bug Title" value={newBug.title} onChange={e => setNewBug({ ...newBug, title: e.target.value })} required />
-        <textarea className="input-field" placeholder="Description" rows={3} value={newBug.description} onChange={e => setNewBug({ ...newBug, description: e.target.value })} required />
+        <input className="input-field" placeholder="Bug Title" value={newBug.title} onChange={e => setNewBug({...newBug, title: e.target.value})} required />
+        <textarea className="input-field" placeholder="Description" rows={3} value={newBug.description} onChange={e => setNewBug({...newBug, description: e.target.value})} required />
+
+        {/* AI Auto-suggest button */}
+        <button
+          type="button"
+          onClick={handleAutoSuggest}
+          disabled={aiSuggesting}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 1rem',
+            background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(99,102,241,0.2))',
+            border: '1px solid rgba(139,92,246,0.4)', borderRadius: 'var(--radius-sm)',
+            color: '#a78bfa', cursor: aiSuggesting ? 'wait' : 'pointer', fontSize: '0.85rem', fontWeight: 600,
+            width: 'fit-content', transition: 'all 0.2s',
+          }}
+        >
+          {aiSuggesting
+            ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Asking Gemini...</>
+            : <><Sparkles size={14} /> Auto-fill with AI ✨</>}
+        </button>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <select className="input-field" value={newBug.priority} onChange={e => setNewBug({ ...newBug, priority: e.target.value })} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
             <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option>
@@ -217,11 +286,26 @@ export default function Dashboard() {
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <td style={{ padding: '1rem', fontWeight: 500 }}>
-                  {bug.title}
-                  {bug.github_issue_url && (
-                    <a href={bug.github_issue_url} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: '#818cf8', textDecoration: 'none' }}>
-                      (View on GitHub)
-                    </a>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <div>{bug.title}</div>
+                    {bug.github_issue_url && (
+                      <a href={bug.github_issue_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#818cf8', textDecoration: 'none' }}>
+                        (View on GitHub)
+                      </a>
+                    )}
+                  </div>
+                  {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
+                    <div style={{
+                      marginTop: '0.35rem', padding: '0.25rem 0.55rem',
+                      background: 'rgba(245,158,11,0.12)', borderLeft: '3px solid #fbbf24',
+                      borderRadius: '4px', fontSize: '0.78rem', color: '#fbbf24',
+                      display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                    }}>
+                      <AlertTriangle size={12} style={{ flexShrink: 0 }} />
+                      <span>
+                        Similar to: <strong>"{(bug.possible_duplicate || duplicateWarnings[bug.id]).title || 'an existing bug'}"</strong>
+                      </span>
+                    </div>
                   )}
                 </td>
                 <td style={{ padding: '1rem' }}>
@@ -284,28 +368,85 @@ export default function Dashboard() {
           <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
             <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>TITLE</th>
             <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>STATUS</th>
+            <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>AI SUMMARY</th>
           </tr>
         </thead>
         <tbody>
           {userBugs.length === 0 ? (
             <tr>
-              <td colSpan={2} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No bugs found.</td>
+              <td colSpan={3} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No bugs found.</td>
             </tr>
           ) : (
             userBugs.map(bug => (
-              <tr key={bug.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '1rem', fontWeight: 500 }}>
-                  {bug.title}
-                  {bug.github_issue_url && (
-                    <a href={bug.github_issue_url} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: '#818cf8', textDecoration: 'none' }}>
-                      (View on GitHub)
-                    </a>
-                  )}
-                </td>
-                <td style={{ padding: '1rem' }}>
-                  <span className={`badge badge-${bug.status}`}>{bug.status.replace(/_/g, ' ')}</span>
-                </td>
-              </tr>
+              <>
+                <tr key={bug.id} style={{ borderBottom: summaries[bug.id] ? 'none' : '1px solid var(--border)' }}>
+                  <td style={{ padding: '1rem', fontWeight: 500 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <div>{bug.title}</div>
+                      {bug.github_issue_url && (
+                        <a href={bug.github_issue_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#818cf8', textDecoration: 'none' }}>
+                          (View on GitHub)
+                        </a>
+                      )}
+                    </div>
+                    {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
+                      <div style={{
+                        marginTop: '0.35rem', padding: '0.25rem 0.55rem',
+                        background: 'rgba(245,158,11,0.12)', borderLeft: '3px solid #fbbf24',
+                        borderRadius: '4px', fontSize: '0.78rem', color: '#fbbf24',
+                        display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                      }}>
+                        <AlertTriangle size={12} style={{ flexShrink: 0 }} />
+                        <span>
+                          Similar to: <strong>"{(bug.possible_duplicate || duplicateWarnings[bug.id]).title || 'an existing bug'}"</strong>
+                        </span>
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    <span className={`badge badge-${bug.status}`}>{bug.status.replace(/_/g, ' ')}</span>
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    {bug.ai_summary || summaries[bug.id]?.text ? (
+                      <button
+                        onClick={() => setSummaries(prev => ({ ...prev, [bug.id]: prev[bug.id] ? null : { text: bug.ai_summary, generatedAt: bug.ai_summary_generated_at } }))}
+                        style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                      >
+                        <Sparkles size={12} /> {summaries[bug.id] ? 'Hide' : 'View'} Summary
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleSummarizeBug(bug.id)}
+                        disabled={summarizingId === bug.id}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                          padding: '0.3rem 0.6rem', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(99,102,241,0.15))',
+                          border: '1px solid rgba(139,92,246,0.3)', borderRadius: '4px',
+                          color: '#a78bfa', cursor: summarizingId === bug.id ? 'wait' : 'pointer',
+                          fontSize: '0.75rem', fontWeight: 600,
+                        }}
+                      >
+                        {summarizingId === bug.id
+                          ? <><Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> Generating...</>
+                          : <><Sparkles size={11} /> Summarize ✨</>}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+                {summaries[bug.id]?.text && (
+                  <tr key={`${bug.id}-summary`} style={{ borderBottom: '1px solid var(--border)', background: 'rgba(139,92,246,0.04)' }}>
+                    <td colSpan={3} style={{ padding: '0.75rem 1rem 1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                        <Sparkles size={14} style={{ color: '#a78bfa', marginTop: '0.15rem', flexShrink: 0 }} />
+                        <div>
+                          <div style={{ fontSize: '0.78rem', color: '#a78bfa', fontWeight: 600, marginBottom: '0.25rem' }}>AI Summary</div>
+                          <div style={{ fontSize: '0.875rem', color: 'var(--text-main)', lineHeight: 1.5 }}>{summaries[bug.id].text}</div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
             ))
           )}
         </tbody>

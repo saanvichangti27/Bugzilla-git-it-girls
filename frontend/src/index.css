@@ -280,3 +280,9 @@ h1, h2, h3, h4 {
 .badge-closed { background: rgba(156, 163, 175, 0.15); color: #9ca3af; }
 .badge-high, .badge-critical { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 .badge-low, .badge-trivial { background: rgba(156, 163, 175, 0.2); color: #d1d5db; }
+
+/* AI feature spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

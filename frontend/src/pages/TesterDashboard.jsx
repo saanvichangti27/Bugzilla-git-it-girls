@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { api, authService } from '../api/client';
-import { ShieldCheck, Bug, CheckCircle, Plus, FlaskConical, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { api, authService, aiService } from '../api/client';
+import { ShieldCheck, Bug, CheckCircle, Plus, FlaskConical, RotateCcw, CheckCircle2, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
 
 export default function TesterDashboard() {
   const user = authService.getCurrentUser();
@@ -12,6 +12,12 @@ export default function TesterDashboard() {
   // New bug state
   const [showNewBugForm, setShowNewBugForm] = useState(false);
   const [newBug, setNewBug] = useState({ title: '', description: '', priority: 'medium', severity: 'minor', component: 'frontend' });
+
+  // AI state
+  const [aiSuggesting, setAiSuggesting] = useState(false);
+  const [duplicateWarnings, setDuplicateWarnings] = useState({}); // { [bugId]: { title, reason, bug_id } }
+  const [summarizingId, setSummarizingId] = useState(null);
+  const [summaries, setSummaries] = useState({});
 
   const fetchData = async () => {
     try {
@@ -34,15 +40,60 @@ export default function TesterDashboard() {
     fetchData();
   }, []);
 
+  const handleAutoSuggest = async () => {
+    if (!newBug.title || !newBug.description) {
+      alert('Please enter a title and description first.');
+      return;
+    }
+    setAiSuggesting(true);
+    try {
+      const res = await aiService.suggestFields(newBug.title, newBug.description);
+      if (res?.data) {
+        setNewBug(prev => ({
+          ...prev,
+          component: res.data.component || prev.component,
+          priority: res.data.priority || prev.priority,
+          severity: res.data.severity || prev.severity,
+        }));
+      }
+    } catch (err) {
+      console.error('AI suggest failed', err);
+    } finally {
+      setAiSuggesting(false);
+    }
+  };
+
   const handleCreateBug = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/bugs', newBug);
+      const res = await api.post('/bugs', newBug);
+      const bugData = res.data?.data;
+      if (bugData?.possible_duplicate && bugData?.id) {
+        setDuplicateWarnings(prev => ({
+          ...prev,
+          [bugData.id]: bugData.possible_duplicate
+        }));
+      }
       setShowNewBugForm(false);
       setNewBug({ title: '', description: '', priority: 'medium', severity: 'minor', component: 'frontend' });
       fetchData();
     } catch (err) {
       alert(err.response?.data?.detail?.message || err.response?.data?.error?.message || "Failed to create bug");
+    }
+  };
+
+  const handleSummarizeBug = async (bugId) => {
+    setSummarizingId(bugId);
+    try {
+      const res = await aiService.summarizeBug(bugId);
+      if (res?.data) {
+        setSummaries(prev => ({ ...prev, [bugId]: { text: res.data.ai_summary, generatedAt: res.data.generated_at } }));
+      }
+    } catch (err) {
+      console.error('AI summarize failed', err);
+      alert('AI summarization failed. Please try again.');
+    } finally {
+      setSummarizingId(null);
     }
   };
 
@@ -110,7 +161,7 @@ export default function TesterDashboard() {
 
       {/* New bug form */}
       {showNewBugForm && (
-        <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
+        <div className="glass-panel" style={{ padding: '2rem', marginBottom: '1rem' }}>
           <h3>Report a New Bug</h3>
           <form onSubmit={handleCreateBug} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div className="input-group">
@@ -121,6 +172,25 @@ export default function TesterDashboard() {
               <label>Description</label>
               <textarea className="input-field" rows="3" value={newBug.description} onChange={e => setNewBug({...newBug, description: e.target.value})} required />
             </div>
+
+            {/* AI Auto-suggest button */}
+            <button
+              type="button"
+              onClick={handleAutoSuggest}
+              disabled={aiSuggesting}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 1rem',
+                background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(99,102,241,0.2))',
+                border: '1px solid rgba(139,92,246,0.4)', borderRadius: 'var(--radius-sm)',
+                color: '#a78bfa', cursor: aiSuggesting ? 'wait' : 'pointer', fontSize: '0.85rem', fontWeight: 600,
+                width: 'fit-content', transition: 'all 0.2s',
+              }}
+            >
+              {aiSuggesting
+                ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Asking Gemini...</>
+                : <><Sparkles size={14} /> Auto-fill with AI ✨</>}
+            </button>
+
             <div style={{ display: 'flex', gap: '1rem' }}>
               <div className="input-group" style={{ flex: 1 }}>
                 <label>Priority</label>
@@ -148,6 +218,8 @@ export default function TesterDashboard() {
           </form>
         </div>
       )}
+
+      {/* New bug form */}
 
       {/* ── Being Tested queue ── */}
       <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
@@ -180,19 +252,54 @@ export default function TesterDashboard() {
               }}>
                 {/* Bug info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{bug.title}</span>
                     <span className="badge badge-ready_for_testing">being tested</span>
+                    {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
+                      <span style={{
+                        padding: '0.15rem 0.5rem', background: 'rgba(245,158,11,0.15)',
+                        border: '1px solid rgba(245,158,11,0.35)', borderRadius: '4px',
+                        color: '#fbbf24', fontSize: '0.75rem', fontWeight: 600,
+                        display: 'inline-flex', alignItems: 'center', gap: '0.25rem'
+                      }}>
+                        <AlertTriangle size={11} /> Similar to: "{(bug.possible_duplicate || duplicateWarnings[bug.id]).title || 'existing bug'}"
+                      </span>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     <span style={{ background: 'rgba(255,255,255,0.07)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>{bug.component}</span>
                     <span style={{ background: 'rgba(255,255,255,0.07)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>{bug.severity}</span>
                     <span style={{ background: 'rgba(255,255,255,0.07)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>{bug.priority} priority</span>
                   </div>
+                  {/* AI summary inline */}
+                  {summaries[bug.id]?.text && (
+                    <div style={{ marginTop: '0.6rem', padding: '0.5rem 0.75rem', background: 'rgba(139,92,246,0.08)', borderRadius: '6px', borderLeft: '2px solid #a78bfa' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#a78bfa', fontWeight: 600, marginBottom: '0.2rem' }}>✨ AI Summary</div>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-main)', lineHeight: 1.5 }}>{summaries[bug.id].text}</div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
+                  {/* AI Summarize */}
+                  <button
+                    className="btn"
+                    style={{
+                      padding: '0.4rem 0.85rem', fontSize: '0.82rem', display: 'inline-flex',
+                      alignItems: 'center', gap: '0.4rem',
+                      background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(99,102,241,0.15))',
+                      color: '#a78bfa', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 'var(--radius-sm)',
+                      cursor: summarizingId === bug.id ? 'wait' : 'pointer',
+                    }}
+                    onClick={() => handleSummarizeBug(bug.id)}
+                    disabled={summarizingId === bug.id}
+                  >
+                    {summarizingId === bug.id
+                      ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Generating...</>
+                      : <><Sparkles size={13} /> Summarize ✨</>}
+                  </button>
+
                   {/* Pass testing */}
                   <button
                     className="btn"
@@ -286,10 +393,56 @@ export default function TesterDashboard() {
             reportedBugs.map(bug => (
               <div key={bug.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
-                  <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{bug.title}</h4>
-                  <span className={`badge badge-${bug.status}`}>{bug.status === 'ready_for_testing' ? 'being tested' : bug.status.replace(/_/g, ' ')}</span>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{bug.title}</h4>
+                    {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
+                      <div style={{
+                        marginTop: '0.3rem', padding: '0.2rem 0.5rem',
+                        background: 'rgba(245,158,11,0.12)', borderLeft: '3px solid #fbbf24',
+                        borderRadius: '4px', fontSize: '0.75rem', color: '#fbbf24',
+                        display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                      }}>
+                        <AlertTriangle size={11} style={{ flexShrink: 0 }} />
+                        <span>
+                          Similar to: <strong>"{(bug.possible_duplicate || duplicateWarnings[bug.id]).title || 'an existing bug'}"</strong>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <span className={`badge badge-${bug.status}`}>{bug.status === 'ready_for_testing' ? 'being tested' : bug.status.replace(/_/g, ' ')}</span>
+                    {bug.ai_summary || summaries[bug.id]?.text ? (
+                      <button
+                        onClick={() => setSummaries(prev => ({ ...prev, [bug.id]: prev[bug.id] ? null : { text: bug.ai_summary } }))}
+                        style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                      >
+                        <Sparkles size={11} /> {summaries[bug.id] ? 'Hide' : 'View'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleSummarizeBug(bug.id)}
+                        disabled={summarizingId === bug.id}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                          padding: '0.2rem 0.5rem', background: 'rgba(139,92,246,0.12)',
+                          border: '1px solid rgba(139,92,246,0.25)', borderRadius: '4px',
+                          color: '#a78bfa', cursor: summarizingId === bug.id ? 'wait' : 'pointer',
+                          fontSize: '0.7rem', fontWeight: 600,
+                        }}
+                      >
+                        {summarizingId === bug.id
+                          ? <><Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} /> ...</>
+                          : <><Sparkles size={10} /> Summarize ✨</>}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                {summaries[bug.id]?.text && (
+                  <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', background: 'rgba(139,92,246,0.06)', borderRadius: '6px', borderLeft: '2px solid #a78bfa', fontSize: '0.82rem', color: 'var(--text-main)', lineHeight: 1.5 }}>
+                    {summaries[bug.id].text}
+                  </div>
+                )}
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
                   Created: {new Date(bug.created_at).toLocaleDateString()}
                 </div>
               </div>

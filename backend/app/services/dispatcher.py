@@ -8,8 +8,52 @@ from datetime import datetime, timezone
 logger = logging.getLogger("dispatcher")
 
 async def handle_github(event: dict):
-    # TODO: Day 2 Integration
-    pass
+    """
+    On a bug.created event, create a matching GitHub issue via PyGithub.
+    Runs in the background dispatcher — any failure must NOT propagate.
+    """
+    try:
+        from app.services.github_service import create_github_issue
+        from app.config import settings
+
+        payload = event.get("payload") or {}
+        bug_id = event.get("bug_id")
+
+        if not bug_id:
+            return
+
+        # Fetch full bug record to get title + description
+        raw_bug = db.get_bug(bug_id)
+        if not raw_bug:
+            logger.warning(f"[GITHUB DISPATCHER] Bug {bug_id} not found; skipping issue creation.")
+            return
+
+        result = create_github_issue(
+            bug_id=bug_id,
+            title=raw_bug.get("title", ""),
+            description=raw_bug.get("description", ""),
+            frontend_url=settings.APP_FRONTEND_URL,
+        )
+
+        if result:
+            # Persist github_issue_id / github_issue_url back onto the bug
+            db.update_bug(bug_id, {
+                "github_issue_id": result["github_issue_id"],
+                "github_issue_url": result["github_issue_url"],
+            })
+            # Log a canonical event for audit trail
+            db.create_event(
+                "github.issue_created",
+                bug_id,
+                {
+                    "github_issue_id": result["github_issue_id"],
+                    "github_issue_url": result["github_issue_url"],
+                }
+            )
+            logger.info(f"[GITHUB DISPATCHER] Issue #{result['github_issue_id']} linked to bug {bug_id}.")
+
+    except Exception as exc:
+        logger.error(f"[GITHUB DISPATCHER] Unhandled error for event {event.get('id')}: {exc!r}")
 
 async def handle_discord(event: dict):
     if not settings.DISCORD_WEBHOOK_URL:

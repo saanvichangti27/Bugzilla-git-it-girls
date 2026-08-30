@@ -28,7 +28,6 @@ export default function Dashboard() {
 
   const [githubSettings, setGithubSettings] = useState({
     github_token: user?.github_token || '',
-    github_username: user?.github_username || '',
     github_repo: user?.github_repo || ''
   });
   const [githubStatus, setGithubStatus] = useState('');
@@ -120,7 +119,6 @@ export default function Dashboard() {
     try {
       await authService.updateGithubSettings(
         githubSettings.github_token,
-        githubSettings.github_username,
         githubSettings.github_repo
       );
       setGithubStatus('Settings saved! Webhooks configured successfully on your repo.');
@@ -330,7 +328,6 @@ export default function Dashboard() {
       </div>
 
       <form onSubmit={handleSaveGithubSettings} style={{ display: 'grid', gap: '1rem' }}>
-        <input className="input-field" placeholder="GitHub Username (e.g. octocat)" value={githubSettings.github_username} onChange={e => setGithubSettings({...githubSettings, github_username: e.target.value})} />
         <input className="input-field" type="password" placeholder="GitHub Personal Access Token (repo scope required)" value={githubSettings.github_token} onChange={e => setGithubSettings({...githubSettings, github_token: e.target.value})} />
         <input className="input-field" placeholder="Target Repository (e.g. octocat/Hello-World)" value={githubSettings.github_repo} onChange={e => setGithubSettings({...githubSettings, github_repo: e.target.value})} />
         

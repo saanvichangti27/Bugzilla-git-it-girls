@@ -19,5 +19,4 @@ class RoleUpdateRequest(BaseModel):
 
 class UserGitHubSettingsUpdate(BaseModel):
     github_token: str
-    github_username: str
     github_repo: str

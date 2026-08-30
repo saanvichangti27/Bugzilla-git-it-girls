@@ -77,7 +77,6 @@ class Database:
             "role": "reporter",
             "created_at": now.isoformat(),
             "github_token": None,
-            "github_username": None,
             "github_repo": None
         }
         self.users_db["user-developer-id"] = {
@@ -436,7 +435,6 @@ class Database:
             "role": role,
             "created_at": now,
             "github_token": None,
-            "github_username": None,
             "github_repo": None
         }
         
@@ -492,10 +490,9 @@ class Database:
             return self.users_db[user_id]
         return None
 
-    def update_user_github_settings(self, user_id: str, token: str, username: str, repo: str) -> Optional[dict]:
+    def update_user_github_settings(self, user_id: str, token: str, repo: str) -> Optional[dict]:
         updates = {
             "github_token": token,
-            "github_username": username,
             "github_repo": repo
         }
         if self.use_supabase:

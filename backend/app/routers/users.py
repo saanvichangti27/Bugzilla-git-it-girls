@@ -48,7 +48,6 @@ def update_github_settings(
     updated_user = db.update_user_github_settings(
         current_user.id,
         body.github_token,
-        body.github_username,
         body.github_repo
     )
     if not updated_user:

@@ -17,7 +17,7 @@ ALLOWED_COMPONENTS = {"frontend", "backend", "database", "others"}
 ALLOWED_PRIORITIES = {"low", "medium", "high", "critical"}
 ALLOWED_SEVERITIES = {"trivial", "minor", "major", "critical", "blocker"}
 
-MODEL_NAME = "gemini-3.6-flash"
+MODEL_CANDIDATES = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.6-flash"]
 
 
 class DuplicateResult(BaseModel):
@@ -59,6 +59,27 @@ def _get_genai_client():
         return None
 
 
+def _generate_with_fallback(client, prompt: str, config=None):
+    """Try models in MODEL_CANDIDATES sequentially to handle rate limits and availability gracefully."""
+    last_exc = None
+    for model_name in MODEL_CANDIDATES:
+        try:
+            kwargs = {"model": model_name, "contents": prompt}
+            if config:
+                kwargs["config"] = config
+            response = client.models.generate_content(**kwargs)
+            if response and response.text:
+                return response
+        except Exception as exc:
+            logger.warning(f"[AI SERVICE] Model '{model_name}' call failed ({exc!r}). Trying next candidate...")
+            last_exc = exc
+
+    if last_exc:
+        raise last_exc
+    return None
+
+
+
 
 def generate_bug_summary(title: str, description: str, comments: List[Dict[str, Any]]) -> Optional[str]:
     """
@@ -84,10 +105,7 @@ def generate_bug_summary(title: str, description: str, comments: List[Dict[str, 
             f"{comments_text}"
         )
 
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt,
-        )
+        response = _generate_with_fallback(client, prompt)
 
         if response and response.text:
             summary = response.text.strip()
@@ -138,11 +156,7 @@ def detect_duplicate_bug(title: str, description: str, open_bugs: List[Dict[str,
             response_schema=DuplicateResult,
         )
 
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt,
-            config=config,
-        )
+        response = _generate_with_fallback(client, prompt, config=config)
 
         if not response or not response.text:
             return None
@@ -155,10 +169,12 @@ def detect_duplicate_bug(title: str, description: str, open_bugs: List[Dict[str,
 
         if is_dup and dup_id:
             # Verify the duplicate ID actually exists in the provided list
-            valid_ids = {str(b.get("id")) for b in open_bugs}
-            if dup_id in valid_ids:
-                logger.info(f"[AI SERVICE] Duplicate detected: bug {dup_id}")
-                return {"bug_id": dup_id, "reason": reason}
+            bugs_by_id = {str(b.get("id")): b.get("title", "") for b in open_bugs}
+            if dup_id in bugs_by_id:
+                dup_title = bugs_by_id[dup_id]
+                logger.info(f"[AI SERVICE] Duplicate detected: bug {dup_id} ({dup_title})")
+                return {"bug_id": dup_id, "title": dup_title, "reason": reason}
+
 
         return None
 
@@ -193,11 +209,8 @@ def suggest_bug_fields(title: str, description: str) -> Optional[Dict[str, str]]
             response_schema=SuggestedFields,
         )
 
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt,
-            config=config,
-        )
+        response = _generate_with_fallback(client, prompt, config=config)
+
 
         if not response or not response.text:
             return None

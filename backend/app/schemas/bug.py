@@ -63,7 +63,9 @@ class BugListResponse(BaseModel):
 
 class PossibleDuplicate(BaseModel):
     bug_id: str
+    title: Optional[str] = None
     reason: str
+
 
 class BugResponse(BaseModel):
     id: str

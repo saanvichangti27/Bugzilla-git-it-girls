@@ -17,7 +17,7 @@ export default function Dashboard() {
 
   // AI state
   const [aiSuggesting, setAiSuggesting] = useState(false);
-  const [duplicateWarning, setDuplicateWarning] = useState(null); // { bug_id, reason }
+  const [duplicateWarnings, setDuplicateWarnings] = useState({}); // { [bugId]: { title, reason, bug_id } }
   const [summarizingId, setSummarizingId] = useState(null);
   const [summaries, setSummaries] = useState({}); // { [bugId]: { text, generatedAt } }
 
@@ -105,12 +105,14 @@ export default function Dashboard() {
 
   const handleCreateBug = async (e) => {
     e.preventDefault();
-    setDuplicateWarning(null);
     try {
       const res = await api.post('/bugs', newBug);
       const bugData = res.data?.data;
-      if (bugData?.possible_duplicate) {
-        setDuplicateWarning(bugData.possible_duplicate);
+      if (bugData?.possible_duplicate && bugData?.id) {
+        setDuplicateWarnings(prev => ({
+          ...prev,
+          [bugData.id]: bugData.possible_duplicate
+        }));
       }
       setShowCreateForm(false);
       setNewBug({ title: '', description: '', priority: 'medium', severity: 'minor', component: 'frontend' });
@@ -197,7 +199,7 @@ export default function Dashboard() {
         </div>
         <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
           <button type="submit" className="btn btn-primary">Submit Bug</button>
-          <button type="button" className="btn btn-outline" onClick={() => { setShowCreateForm(false); setDuplicateWarning(null); }}>Cancel</button>
+          <button type="button" className="btn btn-outline" onClick={() => setShowCreateForm(false)}>Cancel</button>
         </div>
       </form>
     </div>
@@ -261,7 +263,22 @@ export default function Dashboard() {
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <td style={{ padding: '1rem', fontWeight: 500 }}>{bug.title}</td>
+                <td style={{ padding: '1rem', fontWeight: 500 }}>
+                  <div>{bug.title}</div>
+                  {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
+                    <div style={{
+                      marginTop: '0.35rem', padding: '0.25rem 0.55rem',
+                      background: 'rgba(245,158,11,0.12)', borderLeft: '3px solid #fbbf24',
+                      borderRadius: '4px', fontSize: '0.78rem', color: '#fbbf24',
+                      display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                    }}>
+                      <AlertTriangle size={12} style={{ flexShrink: 0 }} />
+                      <span>
+                        Similar to: <strong>"{(bug.possible_duplicate || duplicateWarnings[bug.id]).title || 'an existing bug'}"</strong>
+                      </span>
+                    </div>
+                  )}
+                </td>
                 <td style={{ padding: '1rem' }}>
                   <span style={{
                     padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600,
@@ -334,7 +351,22 @@ export default function Dashboard() {
             userBugs.map(bug => (
               <>
                 <tr key={bug.id} style={{ borderBottom: summaries[bug.id] ? 'none' : '1px solid var(--border)' }}>
-                  <td style={{ padding: '1rem', fontWeight: 500 }}>{bug.title}</td>
+                  <td style={{ padding: '1rem', fontWeight: 500 }}>
+                    <div>{bug.title}</div>
+                    {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
+                      <div style={{
+                        marginTop: '0.35rem', padding: '0.25rem 0.55rem',
+                        background: 'rgba(245,158,11,0.12)', borderLeft: '3px solid #fbbf24',
+                        borderRadius: '4px', fontSize: '0.78rem', color: '#fbbf24',
+                        display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                      }}>
+                        <AlertTriangle size={12} style={{ flexShrink: 0 }} />
+                        <span>
+                          Similar to: <strong>"{(bug.possible_duplicate || duplicateWarnings[bug.id]).title || 'an existing bug'}"</strong>
+                        </span>
+                      </div>
+                    )}
+                  </td>
                   <td style={{ padding: '1rem' }}>
                     <span className={`badge badge-${bug.status}`}>{bug.status.replace(/_/g, ' ')}</span>
                   </td>
@@ -411,24 +443,6 @@ export default function Dashboard() {
       ) : (
         <>
           {showCreateForm && renderCreateForm()}
-
-          {/* Duplicate bug warning banner */}
-          {duplicateWarning && (
-            <div style={{
-              display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
-              padding: '1rem 1.25rem', marginBottom: '1.5rem',
-              background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.35)',
-              borderRadius: 'var(--radius)', color: '#fbbf24',
-            }}>
-              <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: '0.1rem' }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, marginBottom: '0.2rem' }}>⚠️ Possible Duplicate Detected</div>
-                <div style={{ fontSize: '0.85rem', color: '#fcd34d' }}>{duplicateWarning.reason}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Similar bug ID: <code style={{ color: '#fbbf24' }}>{duplicateWarning.bug_id}</code></div>
-              </div>
-              <button onClick={() => setDuplicateWarning(null)} style={{ background: 'none', border: 'none', color: '#fbbf24', cursor: 'pointer', fontSize: '1rem', padding: 0 }}>✕</button>
-            </div>
-          )}
 
           {role === 'reporter' ? (
             <>

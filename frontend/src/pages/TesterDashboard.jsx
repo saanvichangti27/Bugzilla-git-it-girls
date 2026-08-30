@@ -15,7 +15,7 @@ export default function TesterDashboard() {
 
   // AI state
   const [aiSuggesting, setAiSuggesting] = useState(false);
-  const [duplicateWarning, setDuplicateWarning] = useState(null);
+  const [duplicateWarnings, setDuplicateWarnings] = useState({}); // { [bugId]: { title, reason, bug_id } }
   const [summarizingId, setSummarizingId] = useState(null);
   const [summaries, setSummaries] = useState({});
 
@@ -65,12 +65,14 @@ export default function TesterDashboard() {
 
   const handleCreateBug = async (e) => {
     e.preventDefault();
-    setDuplicateWarning(null);
     try {
       const res = await api.post('/bugs', newBug);
       const bugData = res.data?.data;
-      if (bugData?.possible_duplicate) {
-        setDuplicateWarning(bugData.possible_duplicate);
+      if (bugData?.possible_duplicate && bugData?.id) {
+        setDuplicateWarnings(prev => ({
+          ...prev,
+          [bugData.id]: bugData.possible_duplicate
+        }));
       }
       setShowNewBugForm(false);
       setNewBug({ title: '', description: '', priority: 'medium', severity: 'minor', component: 'frontend' });
@@ -217,23 +219,7 @@ export default function TesterDashboard() {
         </div>
       )}
 
-      {/* Duplicate bug warning banner */}
-      {duplicateWarning && (
-        <div style={{
-          display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
-          padding: '1rem 1.25rem', marginBottom: '1.5rem',
-          background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.35)',
-          borderRadius: 'var(--radius)', color: '#fbbf24',
-        }}>
-          <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: '0.1rem' }} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600, marginBottom: '0.2rem' }}>⚠️ Possible Duplicate Detected</div>
-            <div style={{ fontSize: '0.85rem', color: '#fcd34d' }}>{duplicateWarning.reason}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Similar bug ID: <code style={{ color: '#fbbf24' }}>{duplicateWarning.bug_id}</code></div>
-          </div>
-          <button onClick={() => setDuplicateWarning(null)} style={{ background: 'none', border: 'none', color: '#fbbf24', cursor: 'pointer', fontSize: '1rem', padding: 0 }}>✕</button>
-        </div>
-      )}
+      {/* New bug form */}
 
       {/* ── Being Tested queue ── */}
       <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
@@ -266,9 +252,19 @@ export default function TesterDashboard() {
               }}>
                 {/* Bug info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{bug.title}</span>
                     <span className="badge badge-ready_for_testing">being tested</span>
+                    {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
+                      <span style={{
+                        padding: '0.15rem 0.5rem', background: 'rgba(245,158,11,0.15)',
+                        border: '1px solid rgba(245,158,11,0.35)', borderRadius: '4px',
+                        color: '#fbbf24', fontSize: '0.75rem', fontWeight: 600,
+                        display: 'inline-flex', alignItems: 'center', gap: '0.25rem'
+                      }}>
+                        <AlertTriangle size={11} /> Similar to: "{(bug.possible_duplicate || duplicateWarnings[bug.id]).title || 'existing bug'}"
+                      </span>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     <span style={{ background: 'rgba(255,255,255,0.07)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>{bug.component}</span>
@@ -397,7 +393,22 @@ export default function TesterDashboard() {
             reportedBugs.map(bug => (
               <div key={bug.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
-                  <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{bug.title}</h4>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{bug.title}</h4>
+                    {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
+                      <div style={{
+                        marginTop: '0.3rem', padding: '0.2rem 0.5rem',
+                        background: 'rgba(245,158,11,0.12)', borderLeft: '3px solid #fbbf24',
+                        borderRadius: '4px', fontSize: '0.75rem', color: '#fbbf24',
+                        display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                      }}>
+                        <AlertTriangle size={11} style={{ flexShrink: 0 }} />
+                        <span>
+                          Similar to: <strong>"{(bug.possible_duplicate || duplicateWarnings[bug.id]).title || 'an existing bug'}"</strong>
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <span className={`badge badge-${bug.status}`}>{bug.status === 'ready_for_testing' ? 'being tested' : bug.status.replace(/_/g, ' ')}</span>
                     {bug.ai_summary || summaries[bug.id]?.text ? (

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { api, authService } from '../api/client';
-import { PlusCircle, CheckCheck, Layers } from 'lucide-react';
+import { PlusCircle, CheckCheck, Layers, FlaskConical } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import TesterDashboard from './TesterDashboard';
 
@@ -11,7 +11,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ open_bugs: 0, assigned_to_me: 0, resolved_this_week: 0 });
   const [loading, setLoading] = useState(true);
   const [userBugs, setUserBugs] = useState([]);         // reporter: bugs they reported
-  const [openBugs, setOpenBugs] = useState([]);          // developer: all open bugs (new + in_progress)
+  const [openBugs, setOpenBugs] = useState([]);          // developer: active bugs (new + in_progress + ready_for_testing)
   const [selectedComponent, setSelectedComponent] = useState(null); // null = "All"
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -39,19 +39,16 @@ export default function Dashboard() {
         const bugsRes = await api.get(`/bugs?reporter_id=${user.id}`);
         setUserBugs(bugsRes.data.data.items);
       } else if (role === 'developer') {
-        // GET /bugs supports only one status at a time, so we make two calls
-        // and merge client-side.
-        //
-        // ⚠️  BACKEND DEPENDENCY (Person A): 'ready_for_testing' must be added to
-        // the backend status enum + transition logic before "Mark as Resolved"
-        // will succeed end-to-end. Flag in PR description before merging.
-        const [newRes, inProgressRes] = await Promise.all([
+        // Fetch new, in_progress, and ready_for_testing bugs
+        const [newRes, inProgressRes, readyRes] = await Promise.all([
           api.get('/bugs?status=new'),
           api.get('/bugs?status=in_progress'),
+          api.get('/bugs?status=ready_for_testing'),
         ]);
         const combined = [
           ...(newRes.data.data.items || []),
           ...(inProgressRes.data.data.items || []),
+          ...(readyRes.data.data.items || []),
         ];
         setOpenBugs(combined);
       }
@@ -90,13 +87,20 @@ export default function Dashboard() {
   };
 
   // Sends PATCH /bugs/{id} with status: 'ready_for_testing'.
-  // Removes bug optimistically; reverts on API failure.
+  // Updates bug status to 'ready_for_testing' optimistically; reverts on API failure.
   const handleMarkResolved = async (bugId) => {
-    setOpenBugs(prev => prev.filter(b => b.id !== bugId));
+    setOpenBugs(prev => prev.map(b => b.id === bugId ? { ...b, status: 'ready_for_testing' } : b));
     try {
       await api.patch(`/bugs/${bugId}`, { status: 'ready_for_testing' });
+      // Update top summary cards
+      const summaryRes = await api.get('/dashboard/summary');
+      if (summaryRes?.data?.data) {
+        setStats(summaryRes.data.data);
+      }
     } catch (err) {
       console.error("Failed to mark bug as resolved", err);
+      const msg = err.response?.data?.detail?.message || err.response?.data?.error?.message || "Failed to mark bug as resolved";
+      alert(msg);
       fetchDashboardData(); // revert optimistic update
     }
   };
@@ -178,7 +182,7 @@ export default function Dashboard() {
           {displayedBugs.length === 0 ? (
             <tr>
               <td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                No open bugs{selectedComponent ? ` in "${selectedComponent}"` : ''}.
+                No active bugs{selectedComponent ? ` in "${selectedComponent}"` : ''}.
               </td>
             </tr>
           ) : (
@@ -199,20 +203,41 @@ export default function Dashboard() {
                   </span>
                 </td>
                 <td style={{ padding: '1rem' }}>
-                  <span className={`badge badge-${bug.status}`}>{bug.status.replace(/_/g, ' ')}</span>
+                  <span className={`badge badge-${bug.status}`}>
+                    {bug.status === 'ready_for_testing' ? 'being tested' : bug.status.replace(/_/g, ' ')}
+                  </span>
                 </td>
                 <td style={{ padding: '1rem' }}>
-                  <button
-                    className="btn"
-                    style={{
-                      padding: '0.4rem 0.85rem', fontSize: '0.8rem', display: 'inline-flex',
-                      alignItems: 'center', gap: '0.4rem', background: 'rgba(16,185,129,0.12)',
-                      color: '#34d399', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 'var(--radius-sm)',
-                    }}
-                    onClick={() => handleMarkResolved(bug.id)}
-                  >
-                    <CheckCheck size={14} /> Mark as Resolved
-                  </button>
+                  {bug.status === 'ready_for_testing' ? (
+                    <span
+                      style={{
+                        padding: '0.4rem 0.85rem',
+                        fontSize: '0.8rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        background: 'rgba(6,182,212,0.12)',
+                        color: '#22d3ee',
+                        border: '1px solid rgba(6,182,212,0.3)',
+                        borderRadius: 'var(--radius-sm)',
+                        fontWeight: 500,
+                      }}
+                    >
+                      <FlaskConical size={14} /> Being Tested
+                    </span>
+                  ) : (
+                    <button
+                      className="btn"
+                      style={{
+                        padding: '0.4rem 0.85rem', fontSize: '0.8rem', display: 'inline-flex',
+                        alignItems: 'center', gap: '0.4rem', background: 'rgba(16,185,129,0.12)',
+                        color: '#34d399', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 'var(--radius-sm)',
+                      }}
+                      onClick={() => handleMarkResolved(bug.id)}
+                    >
+                      <CheckCheck size={14} /> Mark as Resolved
+                    </button>
+                  )}
                 </td>
               </tr>
             ))
@@ -288,11 +313,19 @@ export default function Dashboard() {
               <div className="dashboard-grid" style={{ marginBottom: '2rem' }}>
                 <div className="glass-card">
                   <div className="metric-title">
-                    Open Bugs in {selectedComponent
-                      ? selectedComponent.charAt(0).toUpperCase() + selectedComponent.slice(1)
-                      : 'All Components'}
+                    Active Bugs {selectedComponent
+                      ? `(${selectedComponent})`
+                      : ''}
                   </div>
-                  <div className="metric-value">{displayedBugs.length}</div>
+                  <div className="metric-value">
+                    {displayedBugs.filter(b => b.status === 'new' || b.status === 'in_progress').length}
+                  </div>
+                </div>
+                <div className="glass-card">
+                  <div className="metric-title">Being Tested</div>
+                  <div className="metric-value" style={{ color: '#22d3ee' }}>
+                    {displayedBugs.filter(b => b.status === 'ready_for_testing').length}
+                  </div>
                 </div>
                 <div className="glass-card">
                   <div className="metric-title">Resolved This Week</div>
@@ -301,7 +334,7 @@ export default function Dashboard() {
               </div>
 
               {/* ── Bug list with component filter ── */}
-              <h3 style={{ marginBottom: '0.75rem' }}>Open Bugs</h3>
+              <h3 style={{ marginBottom: '0.75rem' }}>Active Bugs & Testing Queue</h3>
               {renderComponentFilter()}
               {renderDeveloperBugList()}
             </>

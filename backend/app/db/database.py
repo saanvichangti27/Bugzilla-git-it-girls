@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any, Tuple
 from app.config import settings
 from app.schemas.bug import BugResponse, BugListItem, UserSummary, StatusEnum, PriorityEnum, SeverityEnum
@@ -217,6 +217,8 @@ class Database:
             return None
 
         updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        if "assignee_id" in updates:
+            updates["assignee_id"] = _ensure_uuid(updates["assignee_id"])
 
         if self.use_supabase:
             try:
@@ -229,6 +231,21 @@ class Database:
         existing.update(updates)
         self.bugs_db[bug_id] = existing
         return existing
+
+    def delete_bug(self, bug_id: str) -> bool:
+        if self.use_supabase:
+            try:
+                self.client.table("comments").delete().eq("bug_id", bug_id).execute()
+                self.client.table("events").delete().eq("bug_id", bug_id).execute()
+                self.client.table("bugs").delete().eq("id", bug_id).execute()
+            except Exception as e:
+                print(f"[SUPABASE ERROR] delete_bug failed: {e}. Falling back to memory.")
+
+        if bug_id in self.bugs_db:
+            del self.bugs_db[bug_id]
+        if bug_id in self.comments_db:
+            del self.comments_db[bug_id]
+        return True
 
     # --- COMMENT METHODS ---
     def get_comments(self, bug_id: str) -> List[dict]:
@@ -472,12 +489,12 @@ class Database:
     # --- DASHBOARD METHODS ---
     def get_dashboard_summary(self, user_id: str) -> dict:
         now = datetime.now(timezone.utc)
-        start_of_week = now.date().isoformat() # Approximating to avoid complex date math in sqlite/mem
+        start_of_week = (now - timedelta(days=7)).isoformat()
         
         if self.use_supabase:
             try:
-                open_bugs = self.client.table("bugs").select("id", count="exact").in_("status", ["new", "in_progress"]).execute().count
-                assigned = self.client.table("bugs").select("id", count="exact").eq("assignee_id", user_id).in_("status", ["new", "in_progress"]).execute().count
+                open_bugs = self.client.table("bugs").select("id", count="exact").in_("status", ["new", "in_progress", "ready_for_testing"]).execute().count
+                assigned = self.client.table("bugs").select("id", count="exact").eq("assignee_id", user_id).in_("status", ["new", "in_progress", "ready_for_testing"]).execute().count
                 resolved = self.client.table("bugs").select("id", count="exact").eq("status", "resolved").gte("updated_at", start_of_week).execute().count
                 
                 return {
@@ -489,8 +506,8 @@ class Database:
                 print(f"[SUPABASE ERROR] get_dashboard_summary failed: {e}. Falling back to memory.")
         
         bugs = list(self.bugs_db.values())
-        open_bugs = len([b for b in bugs if b.get("status") in ["new", "in_progress"]])
-        assigned = len([b for b in bugs if b.get("assignee_id") == user_id and b.get("status") in ["new", "in_progress"]])
+        open_bugs = len([b for b in bugs if b.get("status") in ["new", "in_progress", "ready_for_testing"]])
+        assigned = len([b for b in bugs if b.get("assignee_id") == user_id and b.get("status") in ["new", "in_progress", "ready_for_testing"]])
         resolved = len([b for b in bugs if b.get("status") == "resolved" and b.get("updated_at", "") >= start_of_week])
         
         return {

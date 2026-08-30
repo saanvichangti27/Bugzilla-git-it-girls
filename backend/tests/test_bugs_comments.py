@@ -258,3 +258,46 @@ def test_comments_flow():
         assert len(comments) >= 2
     finally:
         db.delete_bug(bug_id)
+
+def test_similar_bugs_search():
+    res = client.get("/api/v1/bugs/similar?q=login", headers=REPORTER_HEADERS)
+    assert res.status_code == 200
+    data = res.json()["data"]
+    assert isinstance(data, list)
+
+def test_follow_unfollow_bug():
+    create_res = client.post(
+        "/api/v1/bugs",
+        json={
+            "title": "Follow test bug",
+            "description": "Bug for testing follow functionality",
+            "priority": "low",
+            "severity": "minor",
+            "component": "frontend"
+        },
+        headers=REPORTER_HEADERS
+    )
+    assert create_res.status_code == 201
+    bug_id = create_res.json()["data"]["id"]
+    try:
+        # Follow bug
+        follow_res = client.post(f"/api/v1/bugs/{bug_id}/follow", headers=DEVELOPER_HEADERS)
+        assert follow_res.status_code == 200
+        assert follow_res.json()["data"]["is_following"] is True
+        assert follow_res.json()["data"]["followers_count"] >= 1
+
+        # Unfollow bug
+        unfollow_res = client.post(f"/api/v1/bugs/{bug_id}/unfollow", headers=DEVELOPER_HEADERS)
+        assert unfollow_res.status_code == 200
+        assert unfollow_res.json()["data"]["is_following"] is False
+    finally:
+        db.delete_bug(bug_id)
+
+def test_file_upload_attachment():
+    files = {"file": ("test_image.png", b"fake image bytes content", "image/png")}
+    res = client.post("/api/v1/bugs/upload", files=files, headers=REPORTER_HEADERS)
+    assert res.status_code == 200
+    data = res.json()["data"]
+    assert data["file_name"] == "test_image.png"
+    assert data["file_url"].startswith("/uploads/")
+

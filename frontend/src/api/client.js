@@ -74,3 +74,31 @@ export const aiService = {
     return response.data;
   }
 };
+
+export const bugService = {
+  searchSimilar: async (query) => {
+    const response = await api.get(`/bugs/similar?q=${encodeURIComponent(query)}`);
+    return response.data;
+  },
+
+  followBug: async (bugId) => {
+    const response = await api.post(`/bugs/${bugId}/follow`);
+    return response.data;
+  },
+
+  unfollowBug: async (bugId) => {
+    const response = await api.post(`/bugs/${bugId}/unfollow`);
+    return response.data;
+  },
+
+  uploadAttachment: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/bugs/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+};

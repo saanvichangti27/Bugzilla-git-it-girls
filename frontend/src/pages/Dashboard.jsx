@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { api, authService, aiService } from '../api/client';
-import { PlusCircle, CheckCheck, Layers, FlaskConical, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
+import { PlusCircle, CheckCheck, Layers, FlaskConical, Sparkles, Loader2, AlertTriangle, Paperclip, Users } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import TesterDashboard from './TesterDashboard';
+import AddBugModal from '../components/AddBugModal';
 
 // Hardcoded component list — no dedicated components-management endpoint yet
 const COMPONENTS = ["frontend", "backend", "database", "others"];
@@ -23,6 +24,7 @@ export default function Dashboard() {
 
   const user = authService.getCurrentUser();
   const role = user?.role || 'reporter';
+  const API_BASE = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api/v1', '') : 'http://127.0.0.1:8000';
 
   const [newBug, setNewBug] = useState({
     title: '',
@@ -183,6 +185,7 @@ export default function Dashboard() {
   // Render helpers
   // ---------------------------------------------------------------------------
   const renderCreateForm = () => (
+<<<<<<< HEAD
     <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
       <h3 style={{ marginTop: 0, marginBottom: '1.5rem' }}>Report New Bug</h3>
       <form onSubmit={handleCreateBug} style={{ display: 'grid', gap: '1rem' }}>
@@ -225,6 +228,13 @@ export default function Dashboard() {
         </div>
       </form>
     </div>
+=======
+    <AddBugModal
+      isOpen={showCreateForm}
+      onClose={() => setShowCreateForm(false)}
+      onBugCreated={() => fetchDashboardData()}
+    />
+>>>>>>> raksha
   );
 
   const pillStyle = (active) => ({
@@ -264,7 +274,7 @@ export default function Dashboard() {
       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
         <thead>
           <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
-            <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>TITLE</th>
+            <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>TITLE & ATTACHMENTS</th>
             <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>COMPONENT</th>
             <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>STATUS</th>
             <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>ACTIONS</th>
@@ -286,6 +296,7 @@ export default function Dashboard() {
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <td style={{ padding: '1rem', fontWeight: 500 }}>
+<<<<<<< HEAD
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <div>{bug.title}</div>
                     {bug.github_issue_url && (
@@ -295,6 +306,35 @@ export default function Dashboard() {
                     )}
                   </div>
                   {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
+=======
+                  <div>{bug.title}</div>
+                  {/* File & Photo Attachments viewable by Developer */}
+                  {bug.attachments && bug.attachments.length > 0 && (
+                    <div style={{ marginTop: '0.4rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      {bug.attachments.map(att => {
+                        const url = att.file_url.startsWith('http') ? att.file_url : `${API_BASE}${att.file_url}`;
+                        return (
+                          <a
+                            key={att.id}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              padding: '0.2rem 0.5rem', background: 'rgba(99,102,241,0.15)',
+                              border: '1px solid rgba(99,102,241,0.3)', borderRadius: '4px',
+                              fontSize: '0.75rem', color: '#818cf8', display: 'inline-flex',
+                              alignItems: 'center', gap: '0.3rem', textDecoration: 'none', fontWeight: 600
+                            }}
+                          >
+                            <Paperclip size={12} /> {att.file_name}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {bug.possible_duplicate && (
+>>>>>>> raksha
                     <div style={{
                       marginTop: '0.35rem', padding: '0.25rem 0.55rem',
                       background: 'rgba(245,158,11,0.12)', borderLeft: '3px solid #fbbf24',
@@ -303,7 +343,7 @@ export default function Dashboard() {
                     }}>
                       <AlertTriangle size={12} style={{ flexShrink: 0 }} />
                       <span>
-                        Similar to: <strong>"{(bug.possible_duplicate || duplicateWarnings[bug.id]).title || 'an existing bug'}"</strong>
+                        Similar to: <strong>"{bug.possible_duplicate.title || 'an existing bug'}"</strong>
                       </span>
                     </div>
                   )}

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { bugService, aiService, api } from '../api/client';
 import { Search, Upload, X, FileText, Image as ImageIcon, Sparkles, Loader2, CheckCircle2, UserCheck, UserPlus, ArrowRight, ArrowLeft } from 'lucide-react';
+import Button from './ui/Button';
+import Badge from './ui/Badge';
 
 export default function AddBugModal({ isOpen, onClose, onBugCreated }) {
   const [step, setStep] = useState(1);

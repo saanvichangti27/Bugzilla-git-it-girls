@@ -4,6 +4,9 @@ import { PlusCircle, CheckCheck, Layers, FlaskConical, Sparkles, Loader2, AlertT
 import AdminDashboard from './AdminDashboard';
 import TesterDashboard from './TesterDashboard';
 import AddBugModal from '../components/AddBugModal';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import Table from '../components/ui/Table';
 
 // Hardcoded component list — no dedicated components-management endpoint yet
 const COMPONENTS = ["frontend", "backend", "database", "others"];
@@ -224,224 +227,170 @@ export default function Dashboard() {
     </div>
   );
 
-  const renderDeveloperBugList = () => (
-    <div className="glass-panel" style={{ overflow: 'hidden' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-        <thead>
-          <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
-            <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>TITLE & ATTACHMENTS</th>
-            <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>COMPONENT</th>
-            <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>STATUS</th>
-            <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>ACTIONS</th>
-          </tr>
-        </thead>
-        <tbody>
-          {displayedBugs.length === 0 ? (
-            <tr>
-              <td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                No active bugs{selectedComponent ? ` in "${selectedComponent}"` : ''}.
-              </td>
-            </tr>
-          ) : (
-            displayedBugs.map(bug => (
-              <tr
-                key={bug.id}
-                style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.15s ease' }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                <td style={{ padding: '1rem', fontWeight: 500 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <div>{bug.title}</div>
-                    {bug.github_issue_url && (
-                      <a href={bug.github_issue_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#818cf8', textDecoration: 'none' }}>
-                        (View on GitHub)
-                      </a>
-                    )}
-                  </div>
-                  {/* File & Photo Attachments viewable by Developer */}
-                  {bug.attachments && bug.attachments.length > 0 && (
-                    <div style={{ marginTop: '0.4rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      {bug.attachments.map(att => {
-                        const url = att.file_url.startsWith('http') ? att.file_url : `${API_BASE}${att.file_url}`;
-                        return (
-                          <a
-                            key={att.id}
-                            href={url}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              padding: '0.2rem 0.5rem', background: 'rgba(99,102,241,0.15)',
-                              border: '1px solid rgba(99,102,241,0.3)', borderRadius: '4px',
-                              fontSize: '0.75rem', color: '#818cf8', display: 'inline-flex',
-                              alignItems: 'center', gap: '0.3rem', textDecoration: 'none', fontWeight: 600
-                            }}
-                          >
-                            <Paperclip size={12} /> {att.file_name}
-                          </a>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
-                    <div style={{
-                      marginTop: '0.35rem', padding: '0.25rem 0.55rem',
-                      background: 'rgba(245,158,11,0.12)', borderLeft: '3px solid #fbbf24',
-                      borderRadius: '4px', fontSize: '0.78rem', color: '#fbbf24',
-                      display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+  const devBugColumns = [
+    {
+      header: 'TITLE & ATTACHMENTS',
+      render: (bug) => (
+        <div style={{ fontWeight: 500 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span>{bug.title}</span>
+            {bug.github_issue_url && (
+              <a href={bug.github_issue_url} target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: 'var(--text-xs)', color: 'var(--primary-400)', textDecoration: 'none' }}>
+                (View on GitHub)
+              </a>
+            )}
+          </div>
+          {bug.attachments && bug.attachments.length > 0 && (
+            <div style={{ marginTop: '0.4rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              {bug.attachments.map(att => {
+                const url = att.file_url.startsWith('http') ? att.file_url : `${API_BASE}${att.file_url}`;
+                return (
+                  <a key={att.id} href={url} target="_blank" rel="noreferrer"
+                    style={{
+                      padding: '0.2rem 0.5rem', background: 'var(--primary-bg-subtle)',
+                      border: '1px solid var(--primary-border-subtle)', borderRadius: 'var(--radius-xs)',
+                      fontSize: 'var(--text-xs)', color: 'var(--primary-400)', display: 'inline-flex',
+                      alignItems: 'center', gap: '0.3rem', textDecoration: 'none', fontWeight: 600,
                     }}>
-                      <AlertTriangle size={12} style={{ flexShrink: 0 }} />
-                      <span>
-                        Similar to: <strong>"{bug.possible_duplicate.title || 'an existing bug'}"</strong>
-                      </span>
-                    </div>
-                  )}
-                </td>
-                <td style={{ padding: '1rem' }}>
-                  <span style={{
-                    padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600,
-                    background: 'rgba(99,102,241,0.1)', color: 'var(--text-muted)', textTransform: 'capitalize',
-                  }}>
-                    {bug.component || '--'}
-                  </span>
-                </td>
-                <td style={{ padding: '1rem' }}>
-                  <span className={`badge badge-${bug.status}`}>
-                    {bug.status === 'ready_for_testing' ? 'being tested' : bug.status.replace(/_/g, ' ')}
-                  </span>
-                </td>
-                <td style={{ padding: '1rem' }}>
-                  {bug.status === 'ready_for_testing' ? (
-                    <span
-                      style={{
-                        padding: '0.4rem 0.85rem',
-                        fontSize: '0.8rem',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        background: 'rgba(6,182,212,0.12)',
-                        color: '#22d3ee',
-                        border: '1px solid rgba(6,182,212,0.3)',
-                        borderRadius: 'var(--radius-sm)',
-                        fontWeight: 500,
-                      }}
-                    >
-                      <FlaskConical size={14} /> Being Tested
-                    </span>
-                  ) : (
-                    <button
-                      className="btn"
-                      style={{
-                        padding: '0.4rem 0.85rem', fontSize: '0.8rem', display: 'inline-flex',
-                        alignItems: 'center', gap: '0.4rem', background: 'rgba(16,185,129,0.12)',
-                        color: '#34d399', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 'var(--radius-sm)',
-                      }}
-                      onClick={() => handleMarkResolved(bug.id)}
-                    >
-                      <CheckCheck size={14} /> Mark as Resolved
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))
+                    <Paperclip size={12} /> {att.file_name}
+                  </a>
+                );
+              })}
+            </div>
           )}
-        </tbody>
-      </table>
-    </div>
+          {bug.possible_duplicate && (
+            <div style={{
+              marginTop: '0.35rem', padding: '0.25rem 0.55rem',
+              background: 'var(--warning-bg-subtle)', borderLeft: '3px solid var(--warning-400)',
+              borderRadius: 'var(--radius-xs)', fontSize: 'var(--text-xs)', color: 'var(--warning-400)',
+              display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+            }}>
+              <AlertTriangle size={12} style={{ flexShrink: 0 }} />
+              Similar to: <strong>"{bug.possible_duplicate.title || 'an existing bug'}"</strong>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: 'COMPONENT',
+      render: (bug) => (
+        <Badge type="custom" value={bug.component || '--'}
+          style={{ background: 'var(--primary-bg-subtle)', color: 'var(--text-muted)', border: '1px solid var(--primary-border-subtle)', textTransform: 'capitalize' }} />
+      ),
+    },
+    {
+      header: 'STATUS',
+      render: (bug) => <Badge type="status" value={bug.status} />,
+    },
+    {
+      header: 'ACTIONS',
+      render: (bug) => bug.status === 'ready_for_testing' ? (
+        <Badge type="status" value="ready_for_testing" icon={<FlaskConical size={13} />} />
+      ) : (
+        <Button size="sm" variant="success" icon={<CheckCheck size={14} />} onClick={() => handleMarkResolved(bug.id)}>
+          Mark as Resolved
+        </Button>
+      ),
+    },
+  ];
+
+  const renderDeveloperBugList = () => (
+    <>
+      <Table
+        columns={devBugColumns}
+        data={displayedBugs}
+        emptyMessage={`No active bugs${selectedComponent ? ` in "${selectedComponent}"` : ''}.`}
+      />
+    </>
   );
 
-  const renderReporterBugList = () => (
-    <div className="glass-panel" style={{ overflow: 'hidden' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-        <thead>
-          <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
-            <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>TITLE</th>
-            <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>STATUS</th>
-            <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>AI SUMMARY</th>
-          </tr>
-        </thead>
-        <tbody>
-          {userBugs.length === 0 ? (
-            <tr>
-              <td colSpan={3} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No bugs found.</td>
-            </tr>
-          ) : (
-            userBugs.map(bug => (
-              <>
-                <tr key={bug.id} style={{ borderBottom: summaries[bug.id] ? 'none' : '1px solid var(--border)' }}>
-                  <td style={{ padding: '1rem', fontWeight: 500 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <div>{bug.title}</div>
-                      {bug.github_issue_url && (
-                        <a href={bug.github_issue_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#818cf8', textDecoration: 'none' }}>
-                          (View on GitHub)
-                        </a>
-                      )}
-                    </div>
-                    {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
-                      <div style={{
-                        marginTop: '0.35rem', padding: '0.25rem 0.55rem',
-                        background: 'rgba(245,158,11,0.12)', borderLeft: '3px solid #fbbf24',
-                        borderRadius: '4px', fontSize: '0.78rem', color: '#fbbf24',
-                        display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-                      }}>
-                        <AlertTriangle size={12} style={{ flexShrink: 0 }} />
-                        <span>
-                          Similar to: <strong>"{(bug.possible_duplicate || duplicateWarnings[bug.id]).title || 'an existing bug'}"</strong>
-                        </span>
-                      </div>
-                    )}
-                  </td>
-                  <td style={{ padding: '1rem' }}>
-                    <span className={`badge badge-${bug.status}`}>{bug.status.replace(/_/g, ' ')}</span>
-                  </td>
-                  <td style={{ padding: '1rem' }}>
-                    {bug.ai_summary || summaries[bug.id]?.text ? (
-                      <button
-                        onClick={() => setSummaries(prev => ({ ...prev, [bug.id]: prev[bug.id] ? null : { text: bug.ai_summary, generatedAt: bug.ai_summary_generated_at } }))}
-                        style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                      >
-                        <Sparkles size={12} /> {summaries[bug.id] ? 'Hide' : 'View'} Summary
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleSummarizeBug(bug.id)}
-                        disabled={summarizingId === bug.id}
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                          padding: '0.3rem 0.6rem', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(99,102,241,0.15))',
-                          border: '1px solid rgba(139,92,246,0.3)', borderRadius: '4px',
-                          color: '#a78bfa', cursor: summarizingId === bug.id ? 'wait' : 'pointer',
-                          fontSize: '0.75rem', fontWeight: 600,
-                        }}
-                      >
-                        {summarizingId === bug.id
-                          ? <><Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> Generating...</>
-                          : <><Sparkles size={11} /> Summarize ✨</>}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-                {summaries[bug.id]?.text && (
-                  <tr key={`${bug.id}-summary`} style={{ borderBottom: '1px solid var(--border)', background: 'rgba(139,92,246,0.04)' }}>
-                    <td colSpan={3} style={{ padding: '0.75rem 1rem 1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
-                        <Sparkles size={14} style={{ color: '#a78bfa', marginTop: '0.15rem', flexShrink: 0 }} />
-                        <div>
-                          <div style={{ fontSize: '0.78rem', color: '#a78bfa', fontWeight: 600, marginBottom: '0.25rem' }}>AI Summary</div>
-                          <div style={{ fontSize: '0.875rem', color: 'var(--text-main)', lineHeight: 1.5 }}>{summaries[bug.id].text}</div>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </>
-            ))
+  const reporterBugColumns = [
+    {
+      header: 'TITLE',
+      render: (bug) => (
+        <div style={{ fontWeight: 500 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span>{bug.title}</span>
+            {bug.github_issue_url && (
+              <a href={bug.github_issue_url} target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: 'var(--text-xs)', color: 'var(--primary-400)', textDecoration: 'none' }}>
+                (View on GitHub)
+              </a>
+            )}
+          </div>
+          {bug.possible_duplicate && (
+            <div style={{
+              marginTop: '0.35rem', padding: '0.25rem 0.55rem',
+              background: 'var(--warning-bg-subtle)', borderLeft: '3px solid var(--warning-400)',
+              borderRadius: 'var(--radius-xs)', fontSize: 'var(--text-xs)', color: 'var(--warning-400)',
+              display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+            }}>
+              <AlertTriangle size={12} style={{ flexShrink: 0 }} />
+              Similar to: <strong>"{bug.possible_duplicate.title || 'an existing bug'}"</strong>
+            </div>
           )}
-        </tbody>
-      </table>
-    </div>
+        </div>
+      ),
+    },
+    {
+      header: 'STATUS',
+      render: (bug) => <Badge type="status" value={bug.status} />,
+    },
+    {
+      header: 'AI SUMMARY',
+      render: (bug) => bug.ai_summary || summaries[bug.id]?.text ? (
+        <Button
+          size="sm" variant="ghost"
+          icon={<Sparkles size={12} />}
+          onClick={() => setSummaries(prev => ({ ...prev, [bug.id]: prev[bug.id] ? null : { text: bug.ai_summary, generatedAt: bug.ai_summary_generated_at } }))}
+          style={{ color: '#a78bfa' }}
+        >
+          {summaries[bug.id] ? 'Hide' : 'View'} Summary
+        </Button>
+      ) : (
+        <Button
+          size="sm" variant="ghost"
+          icon={summarizingId === bug.id ? undefined : <Sparkles size={12} />}
+          loading={summarizingId === bug.id}
+          onClick={() => handleSummarizeBug(bug.id)}
+          style={{ color: '#a78bfa', background: 'var(--primary-bg-subtle)', border: '1px solid var(--primary-border-subtle)' }}
+        >
+          {summarizingId === bug.id ? 'Generating...' : 'Summarize ✨'}
+        </Button>
+      ),
+    },
+  ];
+
+  const renderReporterBugList = () => (
+    <>
+      <Table
+        columns={reporterBugColumns}
+        data={userBugs}
+        emptyMessage="No bugs found."
+      />
+      {/* AI Summary expansion rows */}
+      {userBugs.filter(bug => summaries[bug.id]?.text).map(bug => (
+        <div key={`${bug.id}-summary`} style={{
+          marginTop: '0.25rem', padding: '0.75rem 1rem',
+          background: 'rgba(139,92,246,0.04)', borderRadius: 'var(--radius-xs)',
+          border: '1px solid rgba(139,92,246,0.15)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+            <Sparkles size={14} style={{ color: '#a78bfa', marginTop: '0.15rem', flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: 'var(--text-xs)', color: '#a78bfa', fontWeight: 600, marginBottom: '0.25rem' }}>
+                AI Summary — {bug.title}
+              </div>
+              <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-main)', lineHeight: 1.5 }}>
+                {summaries[bug.id].text}
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
   );
 
   const renderGithubSettings = () => (

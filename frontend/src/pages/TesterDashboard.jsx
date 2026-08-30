@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { api, authService, aiService } from '../api/client';
 import { ShieldCheck, Bug, CheckCircle, Plus, FlaskConical, RotateCcw, CheckCircle2, Sparkles, Loader2, AlertTriangle, Paperclip } from 'lucide-react';
 import AddBugModal from '../components/AddBugModal';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
 
 export default function TesterDashboard() {
   const user = authService.getCurrentUser();
@@ -184,48 +186,26 @@ export default function TesterDashboard() {
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
                   {/* AI Summarize */}
-                  <button
-                    className="btn"
-                    style={{
-                      padding: '0.4rem 0.85rem', fontSize: '0.82rem', display: 'inline-flex',
-                      alignItems: 'center', gap: '0.4rem',
-                      background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(99,102,241,0.15))',
-                      color: '#a78bfa', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 'var(--radius-sm)',
-                      cursor: summarizingId === bug.id ? 'wait' : 'pointer',
-                    }}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon={<Sparkles size={13} />}
+                    loading={summarizingId === bug.id}
                     onClick={() => handleSummarizeBug(bug.id)}
-                    disabled={summarizingId === bug.id}
+                    style={{ color: '#a78bfa', background: 'var(--primary-bg-subtle)', border: '1px solid var(--primary-border-subtle)' }}
                   >
-                    {summarizingId === bug.id
-                      ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Generating...</>
-                      : <><Sparkles size={13} /> Summarize ✨</>}
-                  </button>
+                    {summarizingId === bug.id ? 'Generating...' : 'Summarize ✨'}
+                  </Button>
 
                   {/* Pass testing */}
-                  <button
-                    className="btn"
-                    style={{
-                      padding: '0.4rem 0.85rem', fontSize: '0.82rem', display: 'inline-flex',
-                      alignItems: 'center', gap: '0.4rem', background: 'rgba(16,185,129,0.15)',
-                      color: '#34d399', border: '1px solid rgba(16,185,129,0.35)', borderRadius: 'var(--radius-sm)',
-                    }}
-                    onClick={() => handleMarkFixed(bug.id)}
-                  >
-                    <CheckCircle size={14} /> Mark Fixed
-                  </button>
+                  <Button size="sm" variant="success" icon={<CheckCircle size={14} />} onClick={() => handleMarkFixed(bug.id)}>
+                    Mark Fixed
+                  </Button>
 
                   {/* Fail testing — send back */}
-                  <button
-                    className="btn"
-                    style={{
-                      padding: '0.4rem 0.85rem', fontSize: '0.82rem', display: 'inline-flex',
-                      alignItems: 'center', gap: '0.4rem', background: 'rgba(239,68,68,0.1)',
-                      color: '#f87171', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius-sm)',
-                    }}
-                    onClick={() => handleSendBack(bug.id)}
-                  >
-                    <RotateCcw size={14} /> Send Back
-                  </button>
+                  <Button size="sm" variant="danger" icon={<RotateCcw size={14} />} onClick={() => handleSendBack(bug.id)}>
+                    Send Back
+                  </Button>
                 </div>
               </div>
             ))}

@@ -505,6 +505,10 @@ class Database:
                     return res.data[0]
             except Exception as e:
                 print(f"[SUPABASE ERROR] update_user_github_settings failed: {e}. Falling back to memory.")
+                if user_id not in self.users_db:
+                    user_doc = self.get_user_by_id(user_id)
+                    if user_doc:
+                        self.users_db[user_id] = user_doc
         
         if user_id in self.users_db:
             self.users_db[user_id].update(updates)
@@ -519,6 +523,10 @@ class Database:
                     return res.data[0]
             except Exception as e:
                 print(f"[SUPABASE ERROR] update_user_discord failed: {e}. Falling back to memory.")
+                if user_id not in self.users_db:
+                    user_doc = self.get_user_by_id(user_id)
+                    if user_doc:
+                        self.users_db[user_id] = user_doc
         
         if user_id in self.users_db:
             self.users_db[user_id]["discord_username"] = discord_username

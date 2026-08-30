@@ -1,6 +1,9 @@
+import os
+import uuid
+import shutil
 from datetime import datetime, timezone
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from typing import Optional, List
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
 from app.auth.dependencies import get_current_user, UserPayload
 from app.db.database import db
 from app.events.events import log_event
@@ -19,12 +22,13 @@ from app.schemas.bug import (
     SuggestFieldsRequest,
     SuggestFieldsResponse,
     SummarizeResponse,
+    Attachment,
 )
 from app.services.ai_service import generate_bug_summary, detect_duplicate_bug, suggest_bug_fields
 
 router = APIRouter(prefix="/bugs", tags=["bugs"])
 
-def _format_bug_response(raw: dict) -> BugResponse:
+def _format_bug_response(raw: dict, current_user_id: Optional[str] = None) -> BugResponse:
     assignee = None
     if raw.get("assignee_id"):
         assignee = UserSummary(
@@ -36,6 +40,11 @@ def _format_bug_response(raw: dict) -> BugResponse:
         id=raw.get("reporter_id", "unknown-id"),
         name=raw.get("reporter_name", "Reporter User")
     )
+
+    raw_attachments = raw.get("attachments") or []
+    attachments = [Attachment(**a) if isinstance(a, dict) else a for a in raw_attachments]
+    followers = raw.get("followers") or []
+    is_following = bool(current_user_id and current_user_id in followers)
 
     return BugResponse(
         id=raw["id"],
@@ -52,16 +61,24 @@ def _format_bug_response(raw: dict) -> BugResponse:
         github_issue_id=raw.get("github_issue_id"),
         github_issue_url=raw.get("github_issue_url"),
         ai_summary=raw.get("ai_summary"),
-        ai_summary_generated_at=raw.get("ai_summary_generated_at")
+        ai_summary_generated_at=raw.get("ai_summary_generated_at"),
+        attachments=attachments,
+        followers=followers,
+        followers_count=len(followers),
+        is_following=is_following
     )
 
-def _format_bug_list_item(raw: dict) -> BugListItem:
+def _format_bug_list_item(raw: dict, current_user_id: Optional[str] = None) -> BugListItem:
     assignee = None
     if raw.get("assignee_id"):
         assignee = UserSummary(
             id=raw.get("assignee_id"),
             name=raw.get("assignee_name") or "Assigned User"
         )
+    raw_attachments = raw.get("attachments") or []
+    attachments = [Attachment(**a) if isinstance(a, dict) else a for a in raw_attachments]
+    followers = raw.get("followers") or []
+    is_following = bool(current_user_id and current_user_id in followers)
     return BugListItem(
         id=raw["id"],
         title=raw["title"],
@@ -71,8 +88,75 @@ def _format_bug_list_item(raw: dict) -> BugListItem:
         component=raw["component"],
         assignee=assignee,
         created_at=raw["created_at"],
-        updated_at=raw["updated_at"]
+        updated_at=raw["updated_at"],
+        attachments=attachments,
+        followers_count=len(followers),
+        is_following=is_following
     )
+
+@router.get("/similar", response_model=ResponseEnvelope[List[BugListItem]])
+def search_similar(
+    q: str = Query("", alias="q"),
+    current_user: UserPayload = Depends(get_current_user)
+):
+    raw_items = db.search_similar_bugs(q, limit=15)
+    items = [_format_bug_list_item(b, current_user.id) for b in raw_items]
+    return ResponseEnvelope.success(items)
+
+@router.post("/upload", response_model=ResponseEnvelope[Attachment])
+async def upload_attachment(
+    file: UploadFile = File(...),
+    current_user: UserPayload = Depends(get_current_user)
+):
+    upload_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads"))
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    file_id = str(uuid.uuid4())
+    filename = f"{file_id}_{file.filename}"
+    filepath = os.path.join(upload_dir, filename)
+    
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    file_size = os.path.getsize(filepath)
+    file_url = f"/uploads/{filename}"
+    now = datetime.now(timezone.utc).isoformat()
+    
+    attachment = Attachment(
+        id=file_id,
+        file_name=file.filename,
+        file_url=file_url,
+        file_type=file.content_type or "file",
+        file_size=file_size,
+        uploaded_at=now
+    )
+    return ResponseEnvelope.success(attachment)
+
+@router.post("/{bug_id}/follow", response_model=ResponseEnvelope[BugResponse])
+def follow_bug(
+    bug_id: str,
+    current_user: UserPayload = Depends(get_current_user)
+):
+    raw_bug = db.follow_bug(bug_id, current_user.id)
+    if not raw_bug:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "BUG_NOT_FOUND", "message": f"Bug '{bug_id}' does not exist"}
+        )
+    return ResponseEnvelope.success(_format_bug_response(raw_bug, current_user.id))
+
+@router.post("/{bug_id}/unfollow", response_model=ResponseEnvelope[BugResponse])
+def unfollow_bug(
+    bug_id: str,
+    current_user: UserPayload = Depends(get_current_user)
+):
+    raw_bug = db.unfollow_bug(bug_id, current_user.id)
+    if not raw_bug:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "BUG_NOT_FOUND", "message": f"Bug '{bug_id}' does not exist"}
+        )
+    return ResponseEnvelope.success(_format_bug_response(raw_bug, current_user.id))
 
 @router.get("", response_model=ResponseEnvelope[BugListResponse])
 def list_bugs(
@@ -99,7 +183,7 @@ def list_bugs(
         sort=sort
     )
 
-    items = [_format_bug_list_item(b) for b in raw_items]
+    items = [_format_bug_list_item(b, current_user.id) for b in raw_items]
     response_data = BugListResponse(
         items=items,
         page=page,
@@ -162,7 +246,7 @@ def create_bug(
         }
     )
 
-    formatted = _format_bug_response(raw_bug)
+    formatted = _format_bug_response(raw_bug, current_user.id)
     if possible_dup:
         formatted.possible_duplicate = possible_dup
 
@@ -211,7 +295,7 @@ def get_bug(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "BUG_NOT_FOUND", "message": f"Bug '{bug_id}' does not exist"}
         )
-    return ResponseEnvelope.success(_format_bug_response(raw_bug))
+    return ResponseEnvelope.success(_format_bug_response(raw_bug, current_user.id))
 
 @router.patch("/{bug_id}", response_model=ResponseEnvelope[BugResponse])
 def update_bug(
@@ -231,7 +315,7 @@ def update_bug(
     provided_fields = bug_update.model_dump(exclude_unset=True)
 
     if not provided_fields:
-        return ResponseEnvelope.success(_format_bug_response(raw_bug))
+        return ResponseEnvelope.success(_format_bug_response(raw_bug, current_user.id))
 
     if role == "tester":
         disallowed_fields = set(provided_fields.keys()) - {"status", "assignee_id"}
@@ -322,4 +406,4 @@ def update_bug(
             }
         )
 
-    return ResponseEnvelope.success(_format_bug_response(updated_raw))
+    return ResponseEnvelope.success(_format_bug_response(updated_raw, current_user.id))

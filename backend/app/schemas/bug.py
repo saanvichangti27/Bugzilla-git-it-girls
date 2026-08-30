@@ -27,6 +27,14 @@ class UserSummary(BaseModel):
     id: str
     name: str
 
+class Attachment(BaseModel):
+    id: str
+    file_name: str
+    file_url: str
+    file_type: Optional[str] = "file"
+    file_size: Optional[int] = 0
+    uploaded_at: Optional[str] = None
+
 class BugCreate(BaseModel):
     title: str = Field(..., min_length=1)
     description: str = Field(..., min_length=1)
@@ -34,6 +42,7 @@ class BugCreate(BaseModel):
     severity: SeverityEnum
     component: str = Field(..., min_length=1)
     assignee_id: Optional[str] = None
+    attachments: Optional[List[Attachment]] = []
 
 class BugUpdate(BaseModel):
     title: Optional[str] = None
@@ -43,6 +52,7 @@ class BugUpdate(BaseModel):
     component: Optional[str] = None
     status: Optional[StatusEnum] = None
     assignee_id: Optional[str] = None
+    attachments: Optional[List[Attachment]] = None
 
 class BugListItem(BaseModel):
     id: str
@@ -54,6 +64,9 @@ class BugListItem(BaseModel):
     assignee: Optional[UserSummary] = None
     created_at: datetime
     updated_at: datetime
+    attachments: Optional[List[Attachment]] = []
+    followers_count: Optional[int] = 0
+    is_following: Optional[bool] = False
 
 class BugListResponse(BaseModel):
     items: List[BugListItem]
@@ -84,6 +97,10 @@ class BugResponse(BaseModel):
     ai_summary: Optional[str] = None
     ai_summary_generated_at: Optional[datetime] = None
     possible_duplicate: Optional[PossibleDuplicate] = None
+    attachments: Optional[List[Attachment]] = []
+    followers: Optional[List[str]] = []
+    followers_count: Optional[int] = 0
+    is_following: Optional[bool] = False
 
 class SuggestFieldsRequest(BaseModel):
     title: str = Field(..., min_length=1)

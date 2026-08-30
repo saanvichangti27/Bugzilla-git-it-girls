@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, authService, aiService } from '../api/client';
-import { ShieldCheck, Bug, CheckCircle, Plus, FlaskConical, RotateCcw, CheckCircle2, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, Bug, CheckCircle, Plus, FlaskConical, RotateCcw, CheckCircle2, Sparkles, Loader2, AlertTriangle, Paperclip } from 'lucide-react';
+import AddBugModal from '../components/AddBugModal';
 
 export default function TesterDashboard() {
   const user = authService.getCurrentUser();
@@ -9,13 +10,11 @@ export default function TesterDashboard() {
   const [reportedBugs, setReportedBugs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // New bug state
+  // New bug modal state
   const [showNewBugForm, setShowNewBugForm] = useState(false);
-  const [newBug, setNewBug] = useState({ title: '', description: '', priority: 'medium', severity: 'minor', component: 'frontend' });
+  const API_BASE = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api/v1', '') : 'http://127.0.0.1:8000';
 
   // AI state
-  const [aiSuggesting, setAiSuggesting] = useState(false);
-  const [duplicateWarnings, setDuplicateWarnings] = useState({}); // { [bugId]: { title, reason, bug_id } }
   const [summarizingId, setSummarizingId] = useState(null);
   const [summaries, setSummaries] = useState({});
 
@@ -39,48 +38,6 @@ export default function TesterDashboard() {
   useEffect(() => {
     fetchData();
   }, []);
-
-  const handleAutoSuggest = async () => {
-    if (!newBug.title || !newBug.description) {
-      alert('Please enter a title and description first.');
-      return;
-    }
-    setAiSuggesting(true);
-    try {
-      const res = await aiService.suggestFields(newBug.title, newBug.description);
-      if (res?.data) {
-        setNewBug(prev => ({
-          ...prev,
-          component: res.data.component || prev.component,
-          priority: res.data.priority || prev.priority,
-          severity: res.data.severity || prev.severity,
-        }));
-      }
-    } catch (err) {
-      console.error('AI suggest failed', err);
-    } finally {
-      setAiSuggesting(false);
-    }
-  };
-
-  const handleCreateBug = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await api.post('/bugs', newBug);
-      const bugData = res.data?.data;
-      if (bugData?.possible_duplicate && bugData?.id) {
-        setDuplicateWarnings(prev => ({
-          ...prev,
-          [bugData.id]: bugData.possible_duplicate
-        }));
-      }
-      setShowNewBugForm(false);
-      setNewBug({ title: '', description: '', priority: 'medium', severity: 'minor', component: 'frontend' });
-      fetchData();
-    } catch (err) {
-      alert(err.response?.data?.detail?.message || err.response?.data?.error?.message || "Failed to create bug");
-    }
-  };
 
   const handleSummarizeBug = async (bugId) => {
     setSummarizingId(bugId);
@@ -132,14 +89,20 @@ export default function TesterDashboard() {
 
   return (
     <div>
+      <AddBugModal
+        isOpen={showNewBugForm}
+        onClose={() => setShowNewBugForm(false)}
+        onBugCreated={() => fetchData()}
+      />
+
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <ShieldCheck color="var(--primary)" size={28} />
           <h1 className="text-gradient" style={{ margin: 0 }}>Tester Dashboard</h1>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowNewBugForm(!showNewBugForm)}>
-          <Plus size={18} /> {showNewBugForm ? "Cancel" : "Report Bug"}
+        <button className="btn btn-primary" onClick={() => setShowNewBugForm(true)}>
+          <Plus size={18} /> Report Bug
         </button>
       </div>
 
@@ -158,68 +121,6 @@ export default function TesterDashboard() {
           <div className="metric-value">{reportedBugs.length}</div>
         </div>
       </div>
-
-      {/* New bug form */}
-      {showNewBugForm && (
-        <div className="glass-panel" style={{ padding: '2rem', marginBottom: '1rem' }}>
-          <h3>Report a New Bug</h3>
-          <form onSubmit={handleCreateBug} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div className="input-group">
-              <label>Title</label>
-              <input type="text" className="input-field" value={newBug.title} onChange={e => setNewBug({...newBug, title: e.target.value})} required />
-            </div>
-            <div className="input-group">
-              <label>Description</label>
-              <textarea className="input-field" rows="3" value={newBug.description} onChange={e => setNewBug({...newBug, description: e.target.value})} required />
-            </div>
-
-            {/* AI Auto-suggest button */}
-            <button
-              type="button"
-              onClick={handleAutoSuggest}
-              disabled={aiSuggesting}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 1rem',
-                background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(99,102,241,0.2))',
-                border: '1px solid rgba(139,92,246,0.4)', borderRadius: 'var(--radius-sm)',
-                color: '#a78bfa', cursor: aiSuggesting ? 'wait' : 'pointer', fontSize: '0.85rem', fontWeight: 600,
-                width: 'fit-content', transition: 'all 0.2s',
-              }}
-            >
-              {aiSuggesting
-                ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Asking Gemini...</>
-                : <><Sparkles size={14} /> Auto-fill with AI ✨</>}
-            </button>
-
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <div className="input-group" style={{ flex: 1 }}>
-                <label>Priority</label>
-                <select className="input-field" value={newBug.priority} onChange={e => setNewBug({...newBug, priority: e.target.value})} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
-                  <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option>
-                </select>
-              </div>
-              <div className="input-group" style={{ flex: 1 }}>
-                <label>Severity</label>
-                <select className="input-field" value={newBug.severity} onChange={e => setNewBug({...newBug, severity: e.target.value})} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
-                  <option value="trivial">Trivial</option><option value="minor">Minor</option><option value="major">Major</option><option value="critical">Critical</option><option value="blocker">Blocker</option>
-                </select>
-              </div>
-              <div className="input-group" style={{ flex: 1 }}>
-                <label>Component</label>
-                <select className="input-field" value={newBug.component} onChange={e => setNewBug({...newBug, component: e.target.value})} style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>
-                  <option value="frontend">Frontend</option>
-                  <option value="backend">Backend</option>
-                  <option value="database">Database</option>
-                  <option value="others">Others</option>
-                </select>
-              </div>
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>Submit Bug</button>
-          </form>
-        </div>
-      )}
-
-      {/* New bug form */}
 
       {/* ── Being Tested queue ── */}
       <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
@@ -255,14 +156,14 @@ export default function TesterDashboard() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{bug.title}</span>
                     <span className="badge badge-ready_for_testing">being tested</span>
-                    {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
+                    {bug.possible_duplicate && (
                       <span style={{
                         padding: '0.15rem 0.5rem', background: 'rgba(245,158,11,0.15)',
                         border: '1px solid rgba(245,158,11,0.35)', borderRadius: '4px',
                         color: '#fbbf24', fontSize: '0.75rem', fontWeight: 600,
                         display: 'inline-flex', alignItems: 'center', gap: '0.25rem'
                       }}>
-                        <AlertTriangle size={11} /> Similar to: "{(bug.possible_duplicate || duplicateWarnings[bug.id]).title || 'existing bug'}"
+                        <AlertTriangle size={11} /> Similar to: "{bug.possible_duplicate.title || 'existing bug'}"
                       </span>
                     )}
                   </div>
@@ -395,7 +296,7 @@ export default function TesterDashboard() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
                   <div>
                     <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{bug.title}</h4>
-                    {(bug.possible_duplicate || duplicateWarnings[bug.id]) && (
+                    {bug.possible_duplicate && (
                       <div style={{
                         marginTop: '0.3rem', padding: '0.2rem 0.5rem',
                         background: 'rgba(245,158,11,0.12)', borderLeft: '3px solid #fbbf24',
@@ -404,7 +305,7 @@ export default function TesterDashboard() {
                       }}>
                         <AlertTriangle size={11} style={{ flexShrink: 0 }} />
                         <span>
-                          Similar to: <strong>"{(bug.possible_duplicate || duplicateWarnings[bug.id]).title || 'an existing bug'}"</strong>
+                          Similar to: <strong>"{bug.possible_duplicate.title || 'an existing bug'}"</strong>
                         </span>
                       </div>
                     )}

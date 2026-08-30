@@ -57,6 +57,8 @@ class Database:
             "github_issue_url": None,
             "ai_summary": None,
             "ai_summary_generated_at": None,
+            "attachments": [],
+            "followers": ["user-reporter-id"],
         }
         self.comments_db[bug_id] = [
             {
@@ -97,6 +99,14 @@ class Database:
         bug_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc).isoformat()
         
+        raw_attachments = bug_data.get("attachments") or []
+        formatted_attachments = []
+        for att in raw_attachments:
+            if isinstance(att, dict):
+                formatted_attachments.append(att)
+            elif hasattr(att, "model_dump"):
+                formatted_attachments.append(att.model_dump())
+
         doc = {
             "id": bug_id,
             "title": bug_data["title"],
@@ -115,19 +125,72 @@ class Database:
             "github_issue_url": None,
             "ai_summary": None,
             "ai_summary_generated_at": None,
+            "attachments": formatted_attachments,
+            "followers": [_ensure_uuid(reporter.id)],
         }
 
 
         if self.use_supabase:
             try:
-                res = self.client.table("bugs").insert(doc).execute()
+                supabase_doc = dict(doc)
+                supabase_doc.pop("attachments", None)
+                supabase_doc.pop("followers", None)
+                res = self.client.table("bugs").insert(supabase_doc).execute()
                 if res.data:
-                    return res.data[0]
+                    self.bugs_db[bug_id] = doc
+                    return doc
             except Exception as e:
                 print(f"[SUPABASE ERROR] create_bug failed: {e}. Falling back to memory.")
 
         self.bugs_db[bug_id] = doc
         return doc
+
+    def search_similar_bugs(self, query_str: str, limit: int = 15) -> List[dict]:
+        if not query_str or not query_str.strip():
+            return []
+        q_lower = query_str.strip().lower()
+        words = [w for w in q_lower.split() if len(w) > 2]
+        
+        if self.use_supabase:
+            try:
+                res = self.client.table("bugs").select("*").ilike("title", f"%{q_lower}%").limit(limit).execute()
+                if res.data:
+                    return res.data
+            except Exception as e:
+                print(f"[SUPABASE ERROR] search_similar_bugs failed: {e}. Falling back to memory.")
+        
+        results = []
+        for bug in self.bugs_db.values():
+            title = bug.get("title", "").lower()
+            desc = bug.get("description", "").lower()
+            if q_lower in title or q_lower in desc:
+                results.append(bug)
+            elif words and any(w in title for w in words):
+                results.append(bug)
+        
+        return results[:limit]
+
+    def follow_bug(self, bug_id: str, user_id: str) -> Optional[dict]:
+        bug = self.get_bug(bug_id)
+        if not bug:
+            return None
+        followers = list(bug.get("followers") or [])
+        if user_id not in followers:
+            followers.append(user_id)
+            self.update_bug(bug_id, {"followers": followers})
+            bug["followers"] = followers
+        return bug
+
+    def unfollow_bug(self, bug_id: str, user_id: str) -> Optional[dict]:
+        bug = self.get_bug(bug_id)
+        if not bug:
+            return None
+        followers = list(bug.get("followers") or [])
+        if user_id in followers:
+            followers.remove(user_id)
+            self.update_bug(bug_id, {"followers": followers})
+            bug["followers"] = followers
+        return bug
 
     def get_bug(self, bug_id: str) -> Optional[dict]:
         if self.use_supabase:

@@ -165,7 +165,7 @@ export default function TesterDashboard() {
                         color: '#fbbf24', fontSize: '0.75rem', fontWeight: 600,
                         display: 'inline-flex', alignItems: 'center', gap: '0.25rem'
                       }}>
-                        <AlertTriangle size={11} /> Similar to: "{bug.possible_duplicate.title || 'existing bug'}"
+                        <AlertTriangle size={11} /> Our AI flagged this after you searched — want to check again? "{bug.possible_duplicate.title || 'existing bug'}"
                       </span>
                     )}
                   </div>
@@ -285,7 +285,7 @@ export default function TesterDashboard() {
                       }}>
                         <AlertTriangle size={11} style={{ flexShrink: 0 }} />
                         <span>
-                          Similar to: <strong>"{bug.possible_duplicate.title || 'an existing bug'}"</strong>
+                          Our AI flagged this after you searched — want to check again? <strong>"{bug.possible_duplicate.title || 'an existing bug'}"</strong>
                         </span>
                       </div>
                     )}

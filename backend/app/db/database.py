@@ -888,10 +888,11 @@ class Database:
 
         if self.use_supabase:
             try:
-                # ilike search on title and description
+                # Full-text search on search_vector
+                # Note: ts_rank requires raw sql or rpc, but text_search uses it under the hood in Supabase
                 res = (self.client.table("bugs")
                        .select("*")
-                       .or_(f"title.ilike.%{q}%,description.ilike.%{q}%")
+                       .text_search("search_vector", q)
                        .limit(limit)
                        .execute())
                 return res.data or []
@@ -987,5 +988,109 @@ class Database:
             del self.automation_rules_db[rule_id]
             return True
         return False
+
+    def get_analytics_overview(self) -> dict:
+        bugs = []
+        if self.use_supabase:
+            try:
+                res = self.client.table("bugs").select("*").limit(1000).execute()
+                bugs = res.data or []
+            except Exception:
+                bugs = list(self.bugs_db.values())
+        else:
+            bugs = list(self.bugs_db.values())
+            
+        open_bugs = 0
+        critical_bugs = 0
+        github_prs_linked = 0
+        bugs_by_component = {}
+        
+        today = datetime.now(timezone.utc).date()
+        trend_data = {}
+        for i in range(6, -1, -1):
+            day = today - timedelta(days=i)
+            trend_data[day.isoformat()] = {"date": day.strftime("%b %d"), "opened": 0, "resolved": 0}
+            
+        for bug in bugs:
+            st = bug.get("status", "")
+            pr = bug.get("priority", "")
+            
+            if st in ("new", "in_progress", "ready_for_testing"):
+                open_bugs += 1
+                
+            if pr == "critical" and st not in ("resolved", "closed"):
+                critical_bugs += 1
+                
+            if bug.get("github_issue_id"):
+                github_prs_linked += 1
+                
+            comp = bug.get("component", "unknown")
+            bugs_by_component[comp] = bugs_by_component.get(comp, 0) + 1
+
+            if bug.get("created_at"):
+                try:
+                    created_date = datetime.fromisoformat(bug["created_at"].replace('Z', '+00:00')).date()
+                    iso_date = created_date.isoformat()
+                    if iso_date in trend_data:
+                        trend_data[iso_date]["opened"] += 1
+                except Exception:
+                    pass
+
+        events = []
+        if self.use_supabase:
+            try:
+                res = self.client.table("events").select("*").eq("event_type", "bug.status_changed").execute()
+                events = res.data or []
+            except Exception:
+                events = [e for e in self.events_db.values() if e["event_type"] == "bug.status_changed"]
+        else:
+            events = [e for e in self.events_db.values() if e["event_type"] == "bug.status_changed"]
+
+        total_hours = 0
+        resolved_count = 0
+        for ev in events:
+            payload = ev.get("payload_json", {})
+            if payload.get("to") == "resolved":
+                bug_id = ev.get("bug_id")
+                bug = next((b for b in bugs if b["id"] == bug_id), None)
+                if bug and bug.get("created_at"):
+                    try:
+                        created_at = datetime.fromisoformat(bug["created_at"].replace('Z', '+00:00'))
+                        resolved_at = datetime.fromisoformat(ev["created_at"].replace('Z', '+00:00'))
+                        hours = (resolved_at - created_at).total_seconds() / 3600.0
+                        if hours >= 0:
+                            total_hours += hours
+                            resolved_count += 1
+                        
+                        iso_date = resolved_at.date().isoformat()
+                        if iso_date in trend_data:
+                            trend_data[iso_date]["resolved"] += 1
+                    except Exception:
+                        pass
+                        
+        avg_resolution_time_hours = round(total_hours / resolved_count, 1) if resolved_count > 0 else 0
+        
+        webhook_logs = []
+        if self.use_supabase:
+            try:
+                res = self.client.table("webhook_logs").select("*").limit(1000).execute()
+                webhook_logs = res.data or []
+            except Exception:
+                webhook_logs = list(self.webhook_logs_db.values())
+        else:
+            webhook_logs = list(self.webhook_logs_db.values())
+            
+        success_count = sum(1 for w in webhook_logs if w.get("success"))
+        webhook_success_rate = round((success_count / len(webhook_logs)) * 100, 1) if webhook_logs else 0
+
+        return {
+            "open_bugs": open_bugs,
+            "critical_bugs": critical_bugs,
+            "avg_resolution_time_hours": avg_resolution_time_hours,
+            "bugs_by_component": [{"name": k, "value": v} for k, v in bugs_by_component.items()],
+            "github_prs_linked": github_prs_linked,
+            "webhook_success_rate": webhook_success_rate,
+            "trend": list(trend_data.values())
+        }
 
 db = Database()

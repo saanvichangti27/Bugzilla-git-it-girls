@@ -267,7 +267,7 @@ export default function Dashboard() {
               display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
             }}>
               <AlertTriangle size={12} style={{ flexShrink: 0 }} />
-              Similar to: <strong>"{bug.possible_duplicate.title || 'an existing bug'}"</strong>
+              Our AI flagged this after you searched — want to check again? <strong>"{bug.possible_duplicate.title || 'an existing bug'}"</strong>
             </div>
           )}
         </div>
@@ -328,7 +328,7 @@ export default function Dashboard() {
               display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
             }}>
               <AlertTriangle size={12} style={{ flexShrink: 0 }} />
-              Similar to: <strong>"{bug.possible_duplicate.title || 'an existing bug'}"</strong>
+              Our AI flagged this after you searched — want to check again? <strong>"{bug.possible_duplicate.title || 'an existing bug'}"</strong>
             </div>
           )}
         </div>

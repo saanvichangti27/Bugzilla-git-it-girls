@@ -1,10 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, status
 from typing import Optional, List
-from app.schemas.user import UserResponse, RoleUpdateRequest
+from app.schemas.user import UserResponse, RoleUpdateRequest, UserGitHubSettingsUpdate
 from app.schemas.envelope import ResponseEnvelope
 from app.db.database import db
-from app.auth.dependencies import require_role
+from app.auth.dependencies import require_role, get_current_user, UserPayload
 from app.events.events import log_event
+from app.services.github import setup_repository_webhook
+from app.config import settings
 
 router = APIRouter(
     prefix="/users",
@@ -36,4 +38,29 @@ def update_user_role(
         "new_role": body.role
     })
     
+    return ResponseEnvelope.success(UserResponse(**updated_user))
+
+@router.patch("/me/github", response_model=ResponseEnvelope[UserResponse])
+def update_github_settings(
+    body: UserGitHubSettingsUpdate,
+    current_user: UserPayload = Depends(get_current_user)
+):
+    updated_user = db.update_user_github_settings(
+        current_user.id,
+        body.github_token,
+        body.github_username,
+        body.github_repo
+    )
+    if not updated_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "USER_NOT_FOUND", "message": "User not found"})
+        
+    log_event("user.github_settings_updated", None, {
+        "user_id": current_user.id,
+        "github_repo": body.github_repo
+    })
+    
+    # Try to setup the webhook for their repo. 
+    app_webhook_url = f"{settings.BACKEND_PUBLIC_URL}/api/v1/webhooks/github" 
+    setup_repository_webhook(body.github_token, body.github_repo, app_webhook_url)
+
     return ResponseEnvelope.success(UserResponse(**updated_user))

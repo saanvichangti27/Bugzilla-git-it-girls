@@ -45,6 +45,14 @@ export const authService = {
     localStorage.removeItem('user');
   },
 
+  updateGithubSettings: async (github_token, github_username, github_repo) => {
+    const response = await api.patch('/users/me/github', { github_token, github_username, github_repo });
+    if (response.data?.data) {
+      localStorage.setItem('user', JSON.stringify(response.data.data));
+    }
+    return response.data;
+  },
+
   getCurrentUser: () => {
     try {
       return JSON.parse(localStorage.getItem('user'));

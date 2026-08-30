@@ -12,3 +12,8 @@ class UserResponse(BaseModel):
 
 class RoleUpdateRequest(BaseModel):
     role: Literal['reporter', 'tester', 'developer', 'admin']
+
+class UserGitHubSettingsUpdate(BaseModel):
+    github_token: str
+    github_username: str
+    github_repo: str

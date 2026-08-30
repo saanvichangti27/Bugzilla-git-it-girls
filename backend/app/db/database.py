@@ -75,7 +75,10 @@ class Database:
             "name": "Test Reporter User",
             "email": "reporter@example.com",
             "role": "reporter",
-            "created_at": now.isoformat()
+            "created_at": now.isoformat(),
+            "github_token": None,
+            "github_username": None,
+            "github_repo": None
         }
         self.users_db["user-developer-id"] = {
             "id": "user-developer-id",
@@ -431,7 +434,10 @@ class Database:
             "name": name,
             "email": email,
             "role": role,
-            "created_at": now
+            "created_at": now,
+            "github_token": None,
+            "github_username": None,
+            "github_repo": None
         }
         
         if self.use_supabase:
@@ -483,6 +489,25 @@ class Database:
         
         if user_id in self.users_db:
             self.users_db[user_id]["role"] = new_role
+            return self.users_db[user_id]
+        return None
+
+    def update_user_github_settings(self, user_id: str, token: str, username: str, repo: str) -> Optional[dict]:
+        updates = {
+            "github_token": token,
+            "github_username": username,
+            "github_repo": repo
+        }
+        if self.use_supabase:
+            try:
+                res = self.client.table("users").update(updates).eq("id", user_id).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as e:
+                print(f"[SUPABASE ERROR] update_user_github_settings failed: {e}. Falling back to memory.")
+        
+        if user_id in self.users_db:
+            self.users_db[user_id].update(updates)
             return self.users_db[user_id]
         return None
 

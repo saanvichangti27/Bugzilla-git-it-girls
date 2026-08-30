@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.auth.dependencies import get_current_user, UserPayload
 from app.db.database import db
 from app.events.events import log_event
+from app.services.github import create_github_issue
 from app.schemas.envelope import ResponseEnvelope, ErrorDetail
 from app.schemas.bug import (
     BugCreate,
@@ -109,6 +110,17 @@ def create_bug(
     bug_data = bug_in.model_dump()
     bug_data["assignee_id"] = None
     raw_bug = db.create_bug(bug_data, reporter=reporter)
+
+    # Sync to GitHub
+    github_issue = create_github_issue(raw_bug, current_user.id)
+    if github_issue:
+        # Update the bug in the DB with the GitHub Issue details
+        db.update_bug(raw_bug["id"], {
+            "github_issue_id": github_issue["id"],
+            "github_issue_url": github_issue["html_url"]
+        })
+        raw_bug["github_issue_id"] = github_issue["id"]
+        raw_bug["github_issue_url"] = github_issue["html_url"]
 
     # Trigger log_event for bug creation
     log_event(

@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.auth.dependencies import get_current_user, UserPayload
 from app.db.database import db
 from app.schemas.envelope import ResponseEnvelope
+from app.services.permissions import reload_permissions_cache
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -34,6 +35,7 @@ def update_role_permissions(
             raise HTTPException(status_code=500, detail="Database error updating permissions")
     
     db.role_permissions_db = permissions
+    reload_permissions_cache()
     return ResponseEnvelope.success(permissions)
 
 
@@ -57,6 +59,7 @@ def update_status_transitions(
             raise HTTPException(status_code=500, detail="Database error updating transitions")
             
     db.status_transitions_db = transitions
+    reload_permissions_cache()
     return ResponseEnvelope.success(transitions)
 
 @router.get("/automation-rules", response_model=ResponseEnvelope[List[Dict[str, Any]]])
@@ -128,3 +131,8 @@ def delete_automation_rule(
             detail={"code": "RULE_NOT_FOUND", "message": "Automation rule not found"}
         )
     return ResponseEnvelope.success({"deleted": rule_id})
+
+@router.post("/permissions/reload", response_model=ResponseEnvelope[Dict[str, Any]])
+def reload_permissions(admin_user: UserPayload = Depends(require_admin)):
+    reload_permissions_cache()
+    return ResponseEnvelope.success({"status": "reloaded"})

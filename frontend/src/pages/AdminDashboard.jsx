@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import Table from '../components/ui/Table';
 import Badge from '../components/ui/Badge';
+import PermissionsManager from '../components/PermissionsManager';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({ 
@@ -15,6 +16,7 @@ export default function AdminDashboard() {
   });
   const [bugs, setBugs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('analytics');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,16 +40,42 @@ export default function AdminDashboard() {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
         <Shield color="var(--primary)" size={28} />
-        <h1 className="text-gradient" style={{ margin: 0 }}>Admin Overview & Analytics</h1>
+        <h1 className="text-gradient" style={{ margin: 0 }}>Admin Area</h1>
       </div>
       <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-        Global system view. You have read-only access to all bugs and activities.
+        Global system view and configuration.
       </p>
+
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border)' }}>
+        <button 
+          onClick={() => setActiveTab('analytics')}
+          style={{ 
+            background: 'none', border: 'none', padding: '0.75rem 1rem', cursor: 'pointer',
+            color: activeTab === 'analytics' ? 'var(--primary)' : 'var(--text-muted)',
+            borderBottom: activeTab === 'analytics' ? '2px solid var(--primary)' : '2px solid transparent',
+            fontWeight: activeTab === 'analytics' ? 600 : 400
+          }}
+        >
+          Analytics & Overview
+        </button>
+        <button 
+          onClick={() => setActiveTab('permissions')}
+          style={{ 
+            background: 'none', border: 'none', padding: '0.75rem 1rem', cursor: 'pointer',
+            color: activeTab === 'permissions' ? 'var(--primary)' : 'var(--text-muted)',
+            borderBottom: activeTab === 'permissions' ? '2px solid var(--primary)' : '2px solid transparent',
+            fontWeight: activeTab === 'permissions' ? 600 : 400
+          }}
+        >
+          Permissions & Workflow
+        </button>
+      </div>
       
-      {loading ? (
-        <div style={{ color: 'var(--text-muted)' }}>Loading system data...</div>
-      ) : (
-        <>
+      {activeTab === 'analytics' && (
+        loading ? (
+          <div style={{ color: 'var(--text-muted)' }}>Loading system data...</div>
+        ) : (
+          <>
           <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '2rem' }}>
             <div className="glass-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -152,6 +180,11 @@ export default function AdminDashboard() {
             />
           </div>
         </>
+        )
+      )}
+
+      {activeTab === 'permissions' && (
+        <PermissionsManager />
       )}
     </div>
   );

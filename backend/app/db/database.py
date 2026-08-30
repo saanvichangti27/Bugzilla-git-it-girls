@@ -38,8 +38,10 @@ class Database:
         self.notification_preferences_db: List[dict] = []
         # Priority 3 — Automation Rules
         self.automation_rules_db: Dict[str, dict] = {}
+        # Priority 5 — Role Permissions
+        self.role_permissions_db: List[dict] = []
+        self.status_transitions_db: List[dict] = []
         self._seed_data()
-
 
     def _seed_data(self):
         # Sample seed bug
@@ -115,6 +117,33 @@ class Database:
             "created_at": now.isoformat()
         }
 
+        self.role_permissions_db = [
+            {"role": "reporter", "field": "title", "editable": True},
+            {"role": "reporter", "field": "description", "editable": True},
+            {"role": "tester", "field": "status", "editable": True},
+            {"role": "tester", "field": "assignee_id", "editable": True},
+            {"role": "tester", "field": "title", "editable": True},
+            {"role": "tester", "field": "description", "editable": True},
+            {"role": "developer", "field": "title", "editable": True},
+            {"role": "developer", "field": "description", "editable": True},
+            {"role": "developer", "field": "priority", "editable": True},
+            {"role": "developer", "field": "severity", "editable": True},
+            {"role": "developer", "field": "component", "editable": True},
+            {"role": "developer", "field": "status", "editable": True},
+            {"role": "developer", "field": "assignee_id", "editable": True},
+            {"role": "admin", "field": "title", "editable": True},
+            {"role": "admin", "field": "description", "editable": True},
+            {"role": "admin", "field": "priority", "editable": True},
+            {"role": "admin", "field": "severity", "editable": True},
+            {"role": "admin", "field": "component", "editable": True},
+            {"role": "admin", "field": "status", "editable": True},
+            {"role": "admin", "field": "assignee_id", "editable": True}
+        ]
+        
+        self.status_transitions_db = [
+            {"role": "developer", "from_status": "*", "to_status": "in_progress"},
+            {"role": "developer", "from_status": "*", "to_status": "ready_for_testing"}
+        ]
 
     # --- BUG METHODS ---
     def create_bug(self, bug_data: dict, reporter: UserSummary) -> dict:
@@ -1092,5 +1121,68 @@ class Database:
             "webhook_success_rate": webhook_success_rate,
             "trend": list(trend_data.values())
         }
+
+    # --- PERMISSIONS METHODS ---
+    def get_role_permissions(self) -> List[dict]:
+        if self.use_supabase:
+            try:
+                res = self.client.table("role_permissions").select("*").execute()
+                return res.data or []
+            except Exception as exc:
+                print(f"[SUPABASE] get_role_permissions failed: {exc}. Using memory.")
+        return self.role_permissions_db
+        
+    def set_role_permission(self, role: str, field: str, editable: bool) -> dict:
+        if self.use_supabase:
+            try:
+                res = self.client.table("role_permissions").upsert({"role": role, "field": field, "editable": editable}).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as exc:
+                print(f"[SUPABASE] set_role_permission failed: {exc}. Using memory.")
+                
+        for rp in self.role_permissions_db:
+            if rp["role"] == role and rp["field"] == field:
+                rp["editable"] = editable
+                return rp
+        new_rp = {"role": role, "field": field, "editable": editable}
+        self.role_permissions_db.append(new_rp)
+        return new_rp
+        
+    def get_status_transitions(self) -> List[dict]:
+        if self.use_supabase:
+            try:
+                res = self.client.table("status_transitions").select("*").execute()
+                return res.data or []
+            except Exception as exc:
+                print(f"[SUPABASE] get_status_transitions failed: {exc}. Using memory.")
+        return self.status_transitions_db
+        
+    def add_status_transition(self, role: str, from_status: str, to_status: str) -> dict:
+        if self.use_supabase:
+            try:
+                res = self.client.table("status_transitions").upsert({"role": role, "from_status": from_status, "to_status": to_status}).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as exc:
+                print(f"[SUPABASE] add_status_transition failed: {exc}. Using memory.")
+                
+        for st in self.status_transitions_db:
+            if st["role"] == role and st["from_status"] == from_status and st["to_status"] == to_status:
+                return st
+        new_st = {"role": role, "from_status": from_status, "to_status": to_status}
+        self.status_transitions_db.append(new_st)
+        return new_st
+        
+    def remove_status_transition(self, role: str, from_status: str, to_status: str) -> bool:
+        if self.use_supabase:
+            try:
+                res = self.client.table("status_transitions").delete().eq("role", role).eq("from_status", from_status).eq("to_status", to_status).execute()
+                return True
+            except Exception as exc:
+                print(f"[SUPABASE] remove_status_transition failed: {exc}. Using memory.")
+                
+        self.status_transitions_db = [st for st in self.status_transitions_db if not (st["role"] == role and st["from_status"] == from_status and st["to_status"] == to_status)]
+        return True
 
 db = Database()
